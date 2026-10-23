@@ -1,0 +1,1299 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>배포 연습실</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: 상단 연습 표시줄 + 가상 브라우저(주소창) + 저장소 서비스 화면 재현 + 오른쪽 아래 코치 패널. 의도적으로 밝은 단일 테마 */
+:root{
+  color-scheme:light;
+  --fg:#1f2328; --muted:#59636e; --line:#d1d9e0; --line2:#d1d9e0b3; --sub:#f6f8fa; --bg:#ffffff;
+  --link:#0969da; --green:#1f883d; --green-h:#1a7f37; --red:#d1242f; --yellow:#9a6700; --yellow-bg:#fff8c5;
+  --blue-bg:#ddf4ff; --green-bg:#dafbe1; --red-bg:#ffebe9;
+  --coach:#dc2626; --coach-soft:#fef2f2; --ink:#1b1f24;
+  --f-ui:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,"Pretendard","IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-kr:"Pretendard","IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-ui);font-size:14px;line-height:1.5;word-break:keep-all;overflow-wrap:break-word}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;white-space:nowrap;user-select:none;-webkit-user-select:none}
+button:focus,input:focus,textarea:focus{outline:none}
+button:focus-visible,[data-act]:focus-visible{box-shadow:0 0 0 2px var(--link)}
+a{color:var(--link);text-decoration:none;cursor:pointer}
+a:hover{text-decoration:underline}
+svg{flex:none;vertical-align:middle}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono)}
+.muted{color:var(--muted)}
+
+/* practice bar */
+.pbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:var(--ink);color:#fff;font-family:var(--f-kr);display:flex;align-items:center;gap:10px;padding-block:7px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-size:13px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:41;background:var(--ink)}
+.pbar .tag{background:var(--coach);padding:2px 8px;border-radius:4px;font-weight:700;font-size:12px;white-space:nowrap}
+.pbar .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1;opacity:.85}
+.chrome{display:flex;align-items:center;gap:6px;padding-block:6px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:#e9ecef;border-bottom:1px solid var(--line)}
+.chrome .nb{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;color:var(--muted)}
+.chrome .nb:hover{background:#dfe3e7}
+.chrome .nb:disabled{opacity:.35;cursor:default;background:none}
+.addr{flex:1;min-width:0;background:#fff;border-radius:16px;padding:5px 14px;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:8px}
+.addr b{color:var(--fg);font-weight:500}
+
+/* site header */
+.hd{display:flex;align-items:center;gap:10px;padding:12px max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px));background:var(--sub);position:relative}
+.hd.repo{padding-bottom:6px}
+.ib{width:32px;height:32px;border:1px solid var(--line);border-radius:6px;display:inline-grid;place-items:center;color:var(--muted);background:var(--bg)}
+.ib:hover{background:var(--sub)}
+.mark{width:32px;height:32px;border-radius:50%;display:block;color:var(--fg);--dog-bg:#fff;flex:none;padding:0}
+.mark.inv{color:#fff;--dog-bg:#0b0e3a}
+.crumb{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.crumb a{color:var(--fg)}
+.crumb .sep{color:var(--muted);font-weight:400;margin:0 2px}
+.sp{flex:1}
+.search{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;color:var(--muted);font-size:13px;background:var(--bg);min-width:200px;white-space:nowrap}
+.plusbtn{display:inline-flex;gap:2px;width:auto;padding:0 6px}
+.ava{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#8fb3ec,#4b6cb7);flex:none;border:1px solid var(--line);color:#fff;font-weight:700;display:grid;place-items:center;font-size:13px;text-transform:uppercase}
+.rtabs{display:flex;gap:4px;padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));background:var(--sub);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.rtabs::-webkit-scrollbar{display:none}
+.rtab{display:inline-flex;align-items:center;gap:6px;padding:8px 8px 10px;font-size:14px;color:var(--fg);border-bottom:2px solid transparent;border-radius:0}
+.rtab:hover{background:#eaeef2;border-radius:6px 6px 0 0}
+.rtab.on{border-bottom-color:#fd8c73;font-weight:600}
+.cnt{background:#818b981f;border-radius:99px;padding:0 6px;font-size:12px;font-weight:500}
+
+/* menus */
+.menu{position:absolute;z-index:30;background:var(--bg);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(66,74,83,.18);padding:8px;min-width:200px}
+.menu .mi{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;width:100%;text-align:left;font-size:14px}
+.menu .mi:hover{background:#818b9826}
+.menu .mi.dis{color:var(--muted);cursor:default}
+.menu .mi.dis:hover{background:none}
+.menu hr{border:0;border-top:1px solid var(--line);margin:6px -8px}
+.menu .mh{font-size:12px;color:var(--muted);padding:4px 8px;font-weight:600}
+.menu .ck{width:16px;display:inline-grid;place-items:center}
+
+/* common */
+.wrap{max-width:1280px;margin:0 auto;padding-block:24px 160px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.narrow{max-width:760px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:var(--sub);font-size:14px;font-weight:500;color:var(--fg)}
+.btn:hover{background:#eff2f5}
+.btn.sm{height:28px;padding:0 10px;font-size:12px}
+.btn.green{background:var(--green);border-color:#1f232826;color:#fff;font-weight:600}
+.btn.green:hover{background:var(--green-h)}
+.btn.danger{color:var(--red)}
+.btn.danger:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.btn:disabled,.btn.green:disabled{opacity:.5;cursor:not-allowed;background:var(--sub);color:var(--muted);border-color:var(--line)}
+.btn.green:disabled{background:#94d3a2;color:#fff;border-color:#1f232826}
+.in{font:inherit;font-size:14px;height:32px;padding:5px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);width:100%}
+.in:focus{border-color:var(--link);box-shadow:inset 0 0 0 1px var(--link)}
+textarea.in{height:auto;min-height:80px;resize:vertical}
+.in:disabled{background:var(--sub);color:var(--muted)}
+.lbl{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
+.req{color:var(--red)}
+.note{font-size:12px;color:var(--muted);margin-top:4px}
+.ok{color:var(--green);font-size:12px;font-weight:600;display:flex;gap:4px;align-items:center;margin-top:4px}
+.err{color:var(--red);font-size:12px;margin-top:4px}
+.box{border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.box-h{padding:12px 16px;background:var(--sub);border-bottom:1px solid var(--line);border-radius:6px 6px 0 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row{display:flex;align-items:center;gap:10px;padding:8px 16px;border-top:1px solid var(--line2);min-width:0}
+.row:first-child{border-top:0}
+.h1{font-size:24px;font-weight:400;margin:0}
+.h2{font-size:20px;font-weight:600;margin:0}
+.h3{font-size:16px;font-weight:600;margin:0}
+.divider{border:0;border-top:1px solid var(--line);margin:16px 0}
+.pill{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:99px;padding:0 7px;font-size:12px;font-weight:500;color:var(--muted);line-height:18px}
+.flash{padding:16px 20px;border:1px solid;border-radius:6px;display:flex;gap:10px;align-items:center;margin-bottom:16px}
+.flash.ok{background:var(--green-bg);border-color:#4ac26b66;color:var(--fg);font-size:14px;font-weight:400;margin-top:0}
+.flash.info{background:var(--blue-bg);border-color:#54aeff66}
+.flash.warn{background:var(--yellow-bg);border-color:#d4a72c66}
+.flash.bad{background:var(--red-bg);border-color:#ff818266}
+.radio{display:flex;gap:10px;align-items:flex-start;padding:10px 0;cursor:pointer}
+.radio input{margin-top:4px;accent-color:var(--link)}
+.radio small{display:block;color:var(--muted);font-size:12px}
+.sel{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:var(--sub);font-weight:500}
+.sel:hover{background:#eff2f5}
+.relbox{position:relative;display:inline-block}
+
+/* login */
+.login{min-height:calc(100vh - 90px);display:flex;flex-direction:column;align-items:center;padding:32px 16px 140px;gap:16px;background:var(--bg)}
+.login .card{width:100%;max-width:340px;border:1px solid var(--line);border-radius:6px;padding:16px;background:var(--sub);display:flex;flex-direction:column;gap:14px}
+.login .alt{width:100%;max-width:340px;border:1px solid var(--line);border-radius:6px;padding:16px;text-align:center;font-size:14px}
+.login h1{font-size:24px;font-weight:300;margin:0;letter-spacing:-.5px}
+.bigmark{width:48px;height:48px}
+/* landing */
+.land{background:linear-gradient(180deg,#05062b 0%,#0b0e48 45%,#3a2b8f 85%,#5b45c4 100%);color:#fff;min-height:calc(100vh - 90px);display:flex;flex-direction:column;overflow:hidden}
+.land-h{display:flex;align-items:center;justify-content:space-between;padding:20px max(20px,env(safe-area-inset-right,0px)) 20px max(20px,env(safe-area-inset-left,0px))}
+.land-h .ham{color:#fff}
+.land-h .sib{border:1px solid #ffffff55;border-radius:8px;padding:8px 18px;font-size:16px;color:#fff}
+.land-h .sib:hover{background:#ffffff14}
+.land-b{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:72px 24px 0;gap:22px;font-family:var(--f-kr)}
+.land-b h1{font-size:clamp(36px,8vw,64px);line-height:1.18;margin:0;font-weight:600;letter-spacing:-.02em;text-wrap:balance}
+.land-b p{font-size:clamp(16px,2.4vw,20px);line-height:1.6;margin:0;max-width:560px;opacity:.92}
+.signup{width:100%;max-width:520px;background:linear-gradient(180deg,#f4f5f8,#d9dbe6);border-radius:10px;padding:5px;display:flex;flex-direction:column;gap:5px}
+.signup input{font:inherit;font-size:17px;border:0;background:transparent;padding:14px 18px;color:#1f2328}
+.signup input::placeholder{color:#4a4f5a}
+.signup button{background:#0a8a2f;color:#fff;font-size:18px;font-weight:600;padding:15px;border-radius:7px}
+.signup button:hover{background:#0b7a2b}
+.land-out{width:100%;max-width:520px;border:1px solid #ffffff99;border-radius:10px;padding:15px;font-size:17px;color:#fff}
+.land-out:hover{background:#ffffff10}
+.editor{width:min(920px,96%);margin:40px auto 0;border:1px solid #8b7cf0;border-bottom:0;border-radius:24px 24px 0 0;padding:14px 14px 0;background:#ffffff0d}
+.editor-in{background:#0d1117;border-radius:12px 12px 0 0;text-align:left;font-family:var(--f-mono);font-size:13px;overflow:hidden}
+.ed-tabs{display:flex;gap:2px;background:#010409;overflow-x:auto}
+.ed-tabs span{padding:9px 16px;color:#9198a1;white-space:nowrap;font-family:var(--f-ui);font-size:13px}
+.ed-tabs span.on{background:#0d1117;color:#e6edf3}
+.ed-code{padding:14px 0;line-height:1.8;color:#e6edf3;white-space:pre;overflow-x:auto}
+.ed-code i{display:inline-block;width:44px;text-align:right;padding-right:16px;color:#6e7681;font-style:normal}
+.ed-code .c{color:#8b949e}.ed-code .k{color:#ff7b72}.ed-code .s{color:#a5d6ff}.ed-code .t{color:#7ee787}
+/* login */
+.lg2{background:#fff;display:flex;flex-direction:column;align-items:center;padding:44px 20px 0;min-height:calc(100vh - 90px)}
+.lg2 .wrapf{width:100%;max-width:380px;display:flex;flex-direction:column;gap:16px}
+.lg2 h1{font-size:26px;font-weight:300;margin:12px 0 18px;text-align:center;display:flex;gap:8px;justify-content:center;align-items:center}
+.lg2 .lab{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;margin-bottom:8px}
+.lg2 .in{height:46px;font-size:16px}
+.lg2 .go{height:46px;font-size:16px;width:100%;border-radius:6px}
+.orline{display:flex;align-items:center;gap:16px;color:var(--fg);margin:6px 0}
+.orline::before,.orline::after{content:"";flex:1;border-top:1px solid var(--line)}
+.sso{display:flex;align-items:center;justify-content:center;gap:12px;height:46px;border:1px solid var(--line);border-radius:6px;background:var(--sub);font-size:16px;width:100%}
+.sso:hover{background:#eff2f5}
+.sso .gi{width:20px;height:20px;border-radius:50%;border:2px solid #59636e;display:grid;place-items:center;font-size:11px;font-weight:800;color:#59636e}
+.lg2 .links{text-align:center;display:flex;flex-direction:column;gap:14px;font-size:16px;margin-top:10px}
+.lg2 .foot{width:calc(100% + 40px);margin-top:40px;background:var(--sub);display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px 16px 160px;color:var(--muted);font-size:15px}
+.code-boxes{display:flex;gap:6px;justify-content:center}
+.code-boxes span{width:36px;height:40px;border:1px solid var(--line);border-radius:6px;background:var(--bg);display:grid;place-items:center;font-family:var(--f-mono);font-size:18px;font-weight:600}
+
+/* dashboard */
+.dash{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:calc(100vh - 140px)}
+.dash aside{border-right:1px solid var(--line);padding:24px 16px;background:var(--bg);display:flex;flex-direction:column;gap:10px}
+.dash main{background:var(--sub);padding:24px 32px 160px;min-width:0}
+.dash .feed{max-width:720px;display:flex;flex-direction:column;gap:12px}
+.skel{height:10px;border-radius:4px;background:#e4e8ec}
+.repoli{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;padding:4px 0}
+
+/* repo */
+.rgrid{display:grid;grid-template-columns:minmax(0,1fr) 296px;gap:24px}
+.rside{display:flex;flex-direction:column;gap:16px}
+.rside .sec{border-bottom:1px solid var(--line);padding-bottom:16px;display:flex;flex-direction:column;gap:8px}
+.ftable .row{padding:8px 16px}
+.ftable .row .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ftable .row .msg{flex:1;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ftable .row .tm{color:var(--muted);white-space:nowrap;font-size:13px}
+.quick{background:var(--blue-bg);border:1px solid #54aeff66;border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.codebox{font-family:var(--f-mono);font-size:12px;background:var(--sub);border:1px solid var(--line);border-radius:6px;padding:12px 16px;white-space:pre;overflow-x:auto;color:var(--fg)}
+
+/* upload */
+.drop{border:1px dashed var(--line);border-radius:6px;padding:48px 16px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--bg);transition:.15s}
+.drop.over{background:var(--blue-bg);border-color:var(--link)}
+.drop .big{font-size:20px;font-weight:600}
+.helper{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-family:var(--f-kr);background:var(--coach-soft);border:1px dashed var(--coach);border-radius:8px;padding:10px 12px;font-size:13px}
+.helper b{color:var(--coach)}
+.hbtn{font-family:var(--f-kr);font-weight:600;font-size:13px;padding:5px 10px;border-radius:6px;background:var(--coach);color:#fff}
+.hbtn.ghost{background:transparent;color:var(--coach);border:1px solid var(--coach)}
+.av{display:flex;gap:16px;align-items:flex-start}
+
+/* settings */
+.sgrid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px}
+.snav{display:flex;flex-direction:column;gap:2px}
+.snav .g{font-size:12px;font-weight:600;color:var(--muted);padding:12px 8px 4px;border-top:1px solid var(--line);margin-top:8px}
+.snav .g:first-of-type{border-top:0;margin-top:0}
+.snav .it{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:14px;text-align:left;width:100%;position:relative}
+.snav .it:hover{background:#818b981a}
+.snav .it.on{background:#818b981a;font-weight:600}
+.snav .it.on::before{content:"";position:absolute;left:-8px;top:6px;bottom:6px;width:4px;border-radius:6px;background:var(--link)}
+.subhead{border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.danger-zone{border:1px solid var(--red);border-radius:6px}
+.danger-zone .row{padding:16px;justify-content:space-between;flex-wrap:wrap}
+.live{border:1px solid var(--line);border-radius:6px;padding:16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;background:var(--sub)}
+.live .u{font-weight:600;word-break:break-all}
+
+/* actions */
+.agrid{display:grid;grid-template-columns:260px minmax(0,1fr);gap:24px}
+.st{width:16px;height:16px;flex:none;display:inline-block}
+.st.run{border-radius:50%;border:2px solid #bf8700;border-top-color:transparent;animation:spin 1s linear infinite}
+.st.queue{border-radius:50%;border:2px solid #bf8700;opacity:.6}
+.st.ok{border-radius:50%;background:var(--green);position:relative}
+.st.ok::after{content:"";position:absolute;left:5px;top:2.5px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.st.wait{border-radius:50%;border:2px solid var(--line)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.runrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--line2);cursor:pointer}
+.runrow:hover{background:var(--sub)}
+.graph{display:flex;align-items:center;gap:0;flex-wrap:wrap;padding:32px 24px;background:var(--sub);border-radius:0 0 6px 6px;background-image:radial-gradient(#d1d9e0 1px,transparent 1px);background-size:14px 14px}
+.job{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 14px;min-width:200px;display:flex;flex-direction:column;gap:6px}
+.job .t{display:flex;gap:8px;align-items:center;font-weight:600}
+.edge{width:40px;height:2px;background:var(--line)}
+
+/* site */
+.site{height:calc(100vh - 90px);min-height:420px;display:flex;flex-direction:column}
+.site iframe{flex:1;width:100%;border:0;background:#fff}
+.p404{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px 16px 160px;text-align:center}
+.p404 .n{font-size:96px;font-weight:700;line-height:1;color:#d0d7de;letter-spacing:-4px}
+.p404 p{margin:0;max-width:520px}
+
+/* coach */
+.coach{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;width:320px;background:#fff;border:1px solid #f3c4c4;border-radius:14px;box-shadow:0 12px 32px rgba(60,10,10,.18);font-family:var(--f-kr);overflow:hidden}
+.coach-h{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 14px;background:var(--coach);color:#fff}
+.coach-h b{font-size:14px}
+.coach-h .p{font-size:12px;opacity:.9}
+.coach-h button{margin-left:auto;font-size:12px;font-weight:600;padding:3px 8px;border-radius:6px;background:#ffffff26}
+.coach-b{padding:12px 14px;display:flex;flex-direction:column;gap:10px;max-height:56vh;overflow:auto}
+.hintbox{background:var(--coach-soft);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:600;color:#991b1b;line-height:1.45}
+.hintbox small{display:block;font-weight:400;color:#b91c1c;font-size:12.5px;margin-top:3px}
+.mis{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.mis li{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);padding:3px 0}
+.mis li i{width:18px;height:18px;border-radius:50%;border:1.5px solid #e8b4b4;display:grid;place-items:center;font-style:normal;font-size:11px;font-weight:700;flex:none;font-variant-numeric:tabular-nums}
+.mis li.done{color:var(--fg)}
+.mis li.done i{background:var(--coach);border-color:var(--coach);color:#fff}
+.mis li.cur{color:var(--fg);font-weight:600}
+.mis li.cur i{border-color:var(--coach);color:var(--coach)}
+.ctl{display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid #f5d0d0;padding-top:10px}
+.cbtn{font-size:12px;font-weight:600;padding:5px 9px;border-radius:6px;border:1px solid #f3c4c4;color:#991b1b;background:#fff}
+.cbtn.on{background:var(--coach);border-color:var(--coach);color:#fff}
+.coach.min .coach-b{display:none}
+.coach-tag{position:absolute;z-index:55;font-family:var(--f-kr);font-size:12px;font-weight:700;background:var(--coach);color:#fff;padding:3px 9px;border-radius:99px;white-space:nowrap;pointer-events:none;box-shadow:0 4px 12px rgba(220,38,38,.3)}
+.coach-hot{animation:cpulse 1.6s ease-out infinite;border-radius:6px}
+@keyframes cpulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,.5),0 0 0 2px var(--coach)}70%{box-shadow:0 0 0 10px rgba(220,38,38,0),0 0 0 2px var(--coach)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0),0 0 0 2px var(--coach)}}
+
+.guide{display:flex;flex-direction:column;gap:4px;background:var(--coach-soft);border:1px solid #fecaca;border-left:4px solid var(--coach);border-radius:8px;padding:12px 14px;font-family:var(--f-kr);font-size:13.5px;color:#7f1d1d;line-height:1.6}
+.guide>b{font-size:14.5px;color:var(--coach)}
+.guide .lg{display:flex;gap:6px;align-items:center;flex-wrap:wrap;color:#7f1d1d}
+.guide .lg .st{margin-left:4px}
+.bubble{position:absolute;z-index:95;white-space:normal;width:max-content;word-break:keep-all;overflow-wrap:anywhere;font-family:var(--f-kr);max-width:min(300px,calc(100vw - 24px));background:var(--coach);color:#fff;padding:8px 12px;border-radius:10px;box-shadow:0 6px 18px rgba(220,38,38,.35);pointer-events:none;line-height:1.45}
+.bubble::before{content:"";position:absolute;left:var(--ax,50%);top:-6px;width:12px;height:12px;background:var(--coach);transform:translateX(-50%) rotate(45deg);border-radius:2px}
+.bubble.up::before{top:auto;bottom:-6px}
+.bubble.lf::before{left:auto;right:-6px;top:var(--ay);transform:translateY(-50%) rotate(45deg)}
+.bubble.rt::before{left:-6px;top:var(--ay);transform:translateY(-50%) rotate(45deg)}
+.bubble .l1{font-size:13px;font-weight:700;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.bubble .act{background:#fff;color:var(--coach);border-radius:99px;padding:0 7px;font-size:11.5px;font-weight:800}
+.bubble .en{font-family:var(--f-ui);opacity:.9;font-weight:600}
+.bubble .l2{font-size:12px;opacity:.95;margin-top:2px}
+.ko-tip{position:fixed;z-index:58;background:var(--ink);color:#fff;font-family:var(--f-kr);font-size:12.5px;font-weight:600;padding:5px 9px;border-radius:7px;pointer-events:none;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+/* coach panel: blue */
+.coach{--coach:#2563eb;--coach-soft:#eff6ff;border-color:#bfd3f6;box-shadow:0 12px 32px rgba(20,40,90,.18)}
+.coach .hintbox{color:#1e3a8a}
+.coach .hintbox small{color:#1d4ed8}
+.coach .mis li i{border-color:#b6c9ee}
+.coach .ctl{border-top-color:#dbe5f7}
+.coach .cbtn{border-color:#bfd3f6;color:#1e3a8a}
+.coach .cbtn.on{color:#fff;border-color:var(--coach)}
+/* coach compact */
+.coach{width:300px}
+.coach-h{padding:8px 10px 8px 14px}
+.coach-h .cbx{margin-left:auto;display:flex;gap:4px}
+.coach-h .cbx button{margin:0}
+.cprog{height:3px;background:#dbe5f7}
+.cprog i{display:block;height:100%;background:var(--coach);transition:width .3s}
+.coach-b{padding:10px 12px;gap:8px}
+.hintbox{font-size:13.5px;padding:8px 10px}
+.hintbox small{font-size:12px}
+.coach.min .cprog{display:none}
+@media (max-width:860px){.coach{left:auto;right:max(10px,env(safe-area-inset-right,0px));width:min(300px,calc(100vw - 20px));bottom:calc(10px + env(safe-area-inset-bottom,0px))}}
+/* modal & toast */
+.scrim{position:fixed;inset:0;background:rgba(31,35,40,.5);z-index:80;display:grid;place-items:center;padding:16px}
+.modal{background:#fff;border-radius:12px;max-width:440px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.3);overflow:hidden}
+.modal .mh{padding:14px 16px;border-bottom:1px solid var(--line);font-weight:600}
+.modal .mb{padding:16px;display:flex;flex-direction:column;gap:12px}
+.modal .mf{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);opacity:0;background:var(--ink);color:#fff;font-family:var(--f-kr);padding:9px 16px;border-radius:99px;font-size:13.5px;font-weight:600;transition:.2s;pointer-events:none;z-index:90;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.processing{position:fixed;inset:0;background:rgba(255,255,255,.75);z-index:70;display:grid;place-items:center}
+.processing div{display:flex;gap:10px;align-items:center;font-size:16px;font-weight:600}
+
+/* desktop app */
+.appwrap{background:#dfe3e8;padding-block:20px 220px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));min-height:calc(100vh - 40px)}
+.dwin{max-width:1180px;margin:0 auto;background:#fff;border:1px solid #b9bfc7;border-radius:10px;overflow:hidden;box-shadow:0 18px 50px rgba(20,30,45,.22);display:flex;flex-direction:column;min-height:640px}
+.wtitle{display:flex;align-items:center;gap:12px;background:#1f2328;color:#c9d1d9;padding:6px 12px;font-size:12.5px;min-width:0}
+.wtitle .wname{display:flex;gap:6px;align-items:center;font-weight:600;white-space:nowrap}
+.wtitle .mn{display:flex;gap:2px;overflow:visible}
+.wtitle .mn>span{padding:2px 8px;border-radius:4px;cursor:pointer;position:relative}
+.wtitle .mn>span:hover{background:#ffffff1a}
+.wctl{margin-left:auto;display:flex;gap:16px;font-style:normal}
+.wctl i{font-style:normal;opacity:.8}
+.tb{display:flex;background:#24292f;color:#fff;border-top:1px solid #000;overflow-x:auto}
+.tb .sec{display:flex;align-items:center;gap:10px;padding:8px 14px;border-right:1px solid #000;min-width:0;flex:none}
+.tb .sec small{display:block;color:#8b949e;font-size:11px;line-height:1.3;white-space:nowrap}
+.tb .sec b{font-size:13.5px;white-space:nowrap;display:block;overflow:hidden;text-overflow:ellipsis}
+.tb .sec.go{cursor:pointer;flex:0 0 auto;min-width:230px}
+.tb .sec.go:hover{background:#ffffff12}
+.ab{flex:1;display:grid;grid-template-columns:300px minmax(0,1fr);min-height:520px}
+.lp{border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
+.lt{display:flex;border-bottom:1px solid var(--line)}
+.lt button{flex:1;padding:10px;font-weight:600;font-size:13px;border-bottom:2px solid transparent;display:flex;gap:6px;justify-content:center;align-items:center}
+.lt button.on{border-bottom-color:#0969da}
+.chg{flex:1;overflow:auto;min-height:120px}
+.chg .r{display:flex;gap:8px;align-items:center;padding:6px 12px;font-size:13px;cursor:pointer}
+.chg .r.hd{cursor:default;border-bottom:1px solid var(--line);color:var(--muted)}
+.chg .r.sel{background:#0969da;color:#fff}
+.chg .r.sel .muted{color:#ddd}
+.bd{width:16px;height:16px;border-radius:4px;display:grid;place-items:center;font-size:12px;font-weight:700;flex:none;border:1.5px solid}
+.bd.add{color:#1a7f37;border-color:#1a7f37}.bd.mod{color:#9a6700;border-color:#9a6700}
+.chg .r.sel .bd{color:#fff;border-color:#fff}
+.cbox{border-top:1px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--sub)}
+.rp{min-width:0;display:flex;flex-direction:column}
+.dhd{padding:8px 14px;border-bottom:1px solid var(--line);background:var(--sub);font-size:12.5px}
+.diff{font-family:var(--f-mono);font-size:12px;overflow:auto;flex:1;max-height:560px}
+.diff .ln{display:grid;grid-template-columns:48px minmax(0,1fr);background:#e6ffec}
+.diff .ln i{font-style:normal;color:#59636e;text-align:right;padding-right:10px;background:#ccffd8}
+.diff .ln span{white-space:pre;padding-left:8px}
+.diff .ln.hunk,.diff .ln.hunk i{background:#ddf4ff;color:#59636e}
+.blank{padding:36px 28px;display:flex;flex-direction:column;gap:12px;max-width:680px;margin:0 auto;width:100%}
+.sug{border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sug>div{flex:1 1 260px;min-width:0}
+.sug.prim{border-color:#0969da;background:#f5f9ff}
+.onb{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px;background:#fff}
+.oin{max-width:520px;width:100%;display:flex;flex-direction:column;gap:14px}
+.oin h1{font-size:30px;font-weight:300;margin:0}
+.oin p{margin:0}
+.ostack{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.ostack .btn{min-width:260px}
+.startlist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.startlist button{display:flex;gap:10px;align-items:center;padding:12px 16px;border-top:1px solid var(--line);text-align:left;font-size:14px;white-space:normal}
+.startlist button:first-child{border-top:0}
+.startlist button:hover:not(:disabled){background:var(--sub)}
+.startlist button:disabled{color:var(--muted);cursor:not-allowed}
+.bwin{border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.bbar{display:flex;gap:8px;align-items:center;padding:8px 12px;background:#e9ecef;font-size:12.5px;color:var(--muted);font-family:var(--f-mono)}
+.dlg{border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.12);gap:0;max-width:520px}
+.dlg .dh{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);font-weight:600}
+.dlg .db{padding:16px;display:flex;flex-direction:column;gap:12px}
+.df{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);align-items:center}
+.xwin{background:#fff;border-radius:10px;width:min(820px,100%);overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.xgrid{display:grid;grid-template-columns:1fr 1fr;min-height:300px}
+.fdw{width:min(720px,100%)}
+.fdpath{padding:8px 14px;border-bottom:1px solid #e5e5e5;font-family:var(--f-kr);font-size:13px;background:#fff}
+.fdg{grid-template-columns:170px minmax(0,1fr);min-height:260px}
+.fdnav{padding:6px;gap:2px;background:#fafafa}
+.fdn{display:flex;gap:8px;align-items:center;padding:7px 10px;border-radius:6px;font-family:var(--f-kr);font-size:13px;text-align:left}
+.fdn:hover{background:#eef1f4}.fdn.on{background:#dde7f3;font-weight:600}
+.fdrow{display:grid;grid-template-columns:minmax(0,1fr) 110px 80px;gap:8px;align-items:center;padding:7px 12px;font-size:13px;text-align:left;width:100%;font-family:var(--f-kr);white-space:nowrap}
+.fdrow .nm{display:flex;gap:8px;align-items:center;overflow:hidden;text-overflow:ellipsis}
+.fdrow:hover{background:#f0f4f8}.fdrow.sel{background:#cce4ff}
+.fdhd{color:#59636e;font-size:12px;border-bottom:1px solid #eee;cursor:default}
+@media (max-width:560px){.fdrow{grid-template-columns:minmax(0,1fr)}.hide-x{display:none}.fdg{grid-template-columns:minmax(0,1fr)}.fdnav{flex-direction:row;overflow-x:auto}}
+.xp{border-right:1px solid #e5e5e5;display:flex;flex-direction:column;min-width:0}
+.xp:last-child{border-right:0}
+.xp.over{background:#e8f2ff;outline:2px dashed #0969da;outline-offset:-6px}
+.xh{display:flex;gap:6px;align-items:center;padding:10px 12px;border-bottom:1px solid #e5e5e5;font-size:13px;font-family:var(--f-kr);background:#fafafa;white-space:nowrap;overflow:hidden}
+.xl{flex:1;padding:6px;display:flex;flex-direction:column;gap:2px}
+.xf{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:13px;cursor:grab}
+.xf:hover{background:#f0f4f8}
+.xf span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@container stage (max-width:860px){.ab{grid-template-columns:minmax(0,1fr)}.lp{border-right:0;border-bottom:1px solid var(--line)}.dwin{min-height:0}.tb .sec{padding:8px 10px}.tb .sec[style*="width"]{width:auto!important}}
+@container stage (max-width:560px){.xgrid{grid-template-columns:minmax(0,1fr)}.xp{border-right:0;border-bottom:1px solid #e5e5e5}.wtitle .mn{display:none}.ostack .btn{min-width:0;width:100%}}
+/* intro & check */
+.pbar .pb{font-family:var(--f-kr);font-size:12.5px;font-weight:600;color:#fff;padding:4px 10px;border-radius:6px;background:#ffffff1f}
+.pbar .pb:hover{background:#ffffff33}
+.pbar .pb.on{background:#fff;color:var(--ink)}
+.page{background:#f4f5f7;min-height:calc(100vh - 40px);font-family:var(--f-kr);padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.page-in{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.eyebrow{font-size:13px;font-weight:700;color:var(--coach);letter-spacing:.04em}
+.page h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:6px 0 10px;letter-spacing:-.02em;text-wrap:balance}
+.lead{font-size:16px;color:#4a525c;margin:0;max-width:640px;line-height:1.65}
+.kbtn{font-family:var(--f-kr);font-weight:700;font-size:16px;padding:12px 28px;border-radius:10px;background:var(--coach);color:#fff}
+.kbtn:hover{filter:brightness(1.06)}
+.kbtn.ghost{background:#fff;color:var(--fg);border:1px solid #d6d9de}
+.secttl{font-size:13px;font-weight:700;color:#59636e;letter-spacing:.06em;margin:0 0 10px}
+.how{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.how div{background:#fff;border:1px solid #e3e5e9;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.how b{font-size:12px;color:var(--coach);font-variant-numeric:tabular-nums}
+.how strong{font-size:16px}
+.how span{font-size:13.5px;color:#4a525c;line-height:1.55}
+.notes{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid #e3e5e9;border-radius:12px;padding:16px 18px}
+.notes li{display:grid;grid-template-columns:14px 1fr;gap:8px;font-size:14px;color:#3b434c;line-height:1.6}
+.notes li::before{content:"";width:5px;height:5px;border-radius:50%;background:#8a929c;margin:10px 0 0 4px}
+.notes b{color:var(--fg)}
+.mobile-tip{display:none;font-size:13px;background:var(--coach-soft);color:#991b1b;border-radius:10px;padding:10px 14px}
+.chk{display:flex;flex-direction:column;gap:8px}
+.chk .it{background:#fff;border:1px solid #e3e5e9;border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center}
+.chk .it .t{font-weight:700;font-size:15px}
+.chk .it .d{font-size:13px;color:#59636e;margin-top:2px}
+.chip{font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.chip.y{background:var(--green-bg);color:#116329}
+.chip.n{background:#eef0f3;color:#59636e}
+.chip.opt{background:var(--blue-bg);color:#0a4c8a}
+.mk{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;border:1.5px solid #d6d9de;color:#8a929c}
+.mk.y{background:var(--green);border-color:var(--green);color:#fff}
+.score{display:flex;flex-wrap:wrap;gap:10px}
+.score div{flex:1 1 150px;background:#fff;border:1px solid #e3e5e9;border-radius:12px;padding:14px 16px}
+.score small{display:block;font-size:12px;color:#59636e;font-weight:600}
+.score b{font-size:22px;font-variant-numeric:tabular-nums}
+.score .u{font-size:14px;word-break:break-all;color:var(--link);font-family:var(--f-mono);font-weight:600}
+.flow5{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;background:#fff;border:1px solid #e3e5e9;border-radius:14px;overflow:hidden}
+.flow5 li{display:flex;flex-direction:column;gap:12px;padding:18px 16px;border-left:1px solid #eef0f3;position:relative;min-width:0}
+.flow5 li:first-child{border-left:0}
+.flow5 .n{width:34px;height:34px;border-radius:50%;background:var(--coach);color:#fff;display:grid;place-items:center;font-weight:800;font-size:16px}
+.flow5 .fb{display:flex;flex-direction:column;gap:8px;min-width:0}
+.flow5 strong{font-size:17px;letter-spacing:-.01em}
+.chips{display:flex;flex-direction:column;gap:2px;align-items:flex-start}
+.kc{font-family:var(--f-ui);font-size:12.5px;font-weight:600;padding:3px 8px;border:1px solid #d1d9e0;border-bottom-width:2px;border-radius:6px;background:#f6f8fa;color:#1f2328;white-space:normal;max-width:100%}
+.chips .ar{color:#9aa1a9;font-size:11px;line-height:1;padding-left:10px}
+.cap{font-size:13.5px;color:var(--coach);font-weight:700}
+.ncards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.nc{background:#fff;border:1px solid #e3e5e9;border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.nc h3{margin:0;font-size:15px;display:flex;align-items:center;gap:8px}
+.nc h3::before{content:"";width:8px;height:8px;border-radius:50%;background:#8a929c}
+.nc.must{border-color:#fecaca;background:#fffafa}
+.nc.must h3{color:var(--coach)}.nc.must h3::before{background:var(--coach)}
+.nc ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.nc li{display:flex;flex-direction:column;gap:2px;padding-left:12px;border-left:3px solid #e3e5e9}
+.nc.must li{border-left-color:#fca5a5}
+.nc li b{font-size:15px}
+.nc li span{font-size:13.5px;color:#59636e}
+@media (max-width:900px){.flow5{grid-template-columns:minmax(0,1fr)}.flow5 li{flex-direction:row;border-left:0;border-top:1px solid #eef0f3}.flow5 li:first-child{border-top:0}.ncards{grid-template-columns:minmax(0,1fr)}}
+/* intro: one screen */
+#intro{min-height:calc(100vh - 48px);display:flex;padding-block:clamp(10px,2.4vh,32px) clamp(10px,2.4vh,28px)}
+#intro .page-in{gap:clamp(10px,2vh,22px);max-width:1100px;width:100%;margin:auto}
+.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px 32px;flex-wrap:wrap}
+.hero h1{font-size:clamp(24px,4.2vh,40px);margin:2px 0 4px}
+.hero .lead{font-size:15px}
+.hero-b{display:flex;gap:8px;flex-wrap:wrap}
+#intro .secttl{margin:0 0 8px}
+#intro .flow5 li{padding:clamp(12px,2vh,18px) 14px;gap:10px;display:grid;grid-template-columns:28px minmax(0,1fr);align-items:start}
+#intro .flow5 .fb{gap:8px}
+#intro .flow5 strong{line-height:28px}
+#intro .lead{max-width:none}
+#intro .flow5 .n{width:28px;height:28px;font-size:14px}
+#intro .flow5 strong{font-size:16px}
+#intro .chips{flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px}
+#intro .kc{white-space:nowrap;font-size:12px;padding:2px 7px}
+#intro .chips .ar{padding:0;font-size:13px}
+#intro .cap{font-size:13px}
+#intro .nc{padding:clamp(12px,2vh,16px) 16px;gap:10px}
+#intro .nc ul{gap:clamp(4px,1vh,8px)}
+#intro .nc li{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:0 8px;padding-left:10px}
+#intro .nc li b{font-size:14px}
+#intro .nc li span{font-size:13px}
+@media (max-width:900px){#intro{min-height:0}.hero{align-items:flex-start}}
+@media (max-width:760px){.how{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px) and (orientation:portrait){.mobile-tip{display:block}}
+@container stage (max-width:1012px){.rgrid{grid-template-columns:minmax(0,1fr)}.search{min-width:0}}
+@container stage (max-width:860px){
+  .dash{grid-template-columns:minmax(0,1fr)}.dash aside{border-right:0;border-bottom:1px solid var(--line)}.dash main{padding:16px 16px 200px}
+  .sgrid,.agrid{grid-template-columns:minmax(0,1fr)}
+  .search{display:none}
+}
+@container stage (max-width:540px){.hide-sm{display:none!important}.wrap{padding-block:16px 220px}.edge{width:16px}.job{min-width:0;flex:1 1 140px}}
+@media (max-width:860px){.coach{left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));width:auto}}
+#stage{container:stage / inline-size}
+body.desk #stage{width:1280px;zoom:var(--z,1)}
+body.desk .site{height:calc((100vh - 90px) / var(--z,1))}
+body.desk .land,body.desk .lg2,body.desk .login,body.desk .dash{min-height:calc((100vh - 90px) / var(--z,1))}
+html,body{overflow-x:clip}
+.pbar{overflow-x:auto;scrollbar-width:none}.pbar::-webkit-scrollbar{display:none}.pbar>*{flex:none}.pbar .t{flex:1 1 auto}
+.seg{display:inline-flex;border:1px solid #ffffff55;border-radius:7px;padding:2px;gap:2px}
+.seg .pb{background:transparent}
+.seg .pb.on{background:#fff;color:var(--ink)}
+body.mob{background:#d9dde3}
+body.mob #stage{width:min(420px,100%);margin:0 auto;background:#fff;box-shadow:0 0 0 1px #c3c8cf,0 10px 40px rgba(0,0,0,.15);min-height:calc(100vh - 40px)}
+@media (max-width:560px){.pbar .t{display:none}.pbar{gap:6px}.pbar .pb{padding:4px 8px}.pbar .sp2{flex:1}}
+/* landing: desktop */
+.land-nav{display:none;align-items:center;gap:22px;font-size:15px}
+.land-nav span{opacity:.9;display:inline-flex;gap:4px;align-items:center}
+.land-r{display:flex;gap:10px;align-items:center}
+.land-r .sup{display:none;border:1px solid #ffffff99;border-radius:8px;padding:8px 18px;font-size:16px;color:#fff}
+.land-r .srch{display:none;color:#fff;opacity:.85}
+@container stage (min-width:1013px){
+ .land-h{justify-content:flex-start;gap:28px;padding:18px 32px}
+ .land-h .ham{display:none}
+ .land-nav{display:flex}
+ .land-r{margin-left:auto}
+ .land-r .sup,.land-r .srch{display:inline-flex}
+ .land-r .sib{border-color:transparent}
+ .land-b{padding-top:96px}
+ .land-b h1{font-size:72px}
+ .signup{flex-direction:row;max-width:620px;align-items:center}
+ .signup input{flex:1}
+ .signup button{padding:14px 26px}
+ .land-out{max-width:620px}
+ .lg2 .wrapf{max-width:340px}
+ .lg2 form.f-box{background:var(--sub);border:1px solid var(--line);border-radius:6px;padding:16px}
+}
+@media (prefers-reduced-motion:reduce){.coach-hot{animation:none;box-shadow:0 0 0 2px var(--coach)}.st.run{animation:none}}
+</style>
+
+<div class="pbar"><span class="tag">연습용</span><span class="t">GitHub 배포 시뮬레이터</span><span class="sp2"></span><span class="seg"><button class="pb" data-act="vmode:pc" id="pb-pc">PC 화면</button><button class="pb" data-act="vmode:mob" id="pb-mob">모바일 화면</button></span><button class="pb" data-act="view:intro" id="pb-intro">사용 방법</button><button class="pb" data-act="view:sim" id="pb-sim">웹 연습</button><button class="pb" data-act="view:app" id="pb-app">데스크탑 앱</button><button class="pb" data-act="view:check" id="pb-check">점검</button><button class="pb" data-act="c-reset">초기화</button></div>
+<div id="intro" class="page" hidden></div><div id="checkv" class="page" hidden></div>
+<div id="stage">
+<div class="chrome" id="chrome">
+  <button class="nb" data-act="back" id="nav-back" aria-label="뒤로"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button class="nb" data-act="reload" aria-label="새로고침"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v3h-3" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <div class="addr" id="addr"></div>
+</div>
+<div id="sim"></div>
+<div id="appv" class="appwrap" hidden></div>
+</div>
+
+<div class="coach" id="coach"></div>
+<div class="toast" id="toast" role="status"></div>
+<div id="layer"></div>
+<input type="file" id="picker" multiple hidden><input type="file" id="a-picker" multiple hidden>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ico={
+ plus:'<svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 2.5v11M2.5 8h11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>',
+ caret:'<svg width="12" height="12" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+ repo:'<svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 2.5h8.5a1 1 0 0 1 1 1V12H4a1 1 0 0 0-1 1V2.5zM3 13a1 1 0 0 0 1 1h8.5v-2" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/></svg>',
+ file:'<svg width="16" height="16" viewBox="0 0 16 16"><path d="M4 1.75h5l3 3v9.5H4z M9 1.75v3h3" stroke="#59636e" stroke-width="1.3" fill="none" stroke-linejoin="round"/></svg>',
+ check:'<svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+ x:'<svg width="16" height="16" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+ search:'<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M10.5 10.5l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+ menu:'<svg width="16" height="16" viewBox="0 0 16 16"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+ lock:'<svg width="16" height="16" viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="7" rx="1.2" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>',
+ globe:'<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M2 8h12M8 2c2 2 2 10 0 12M8 2c-2 2-2 10 0 12" stroke="currentColor" stroke-width="1.1" fill="none"/></svg>',
+ play:'<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M6.8 5.5l3.5 2.5-3.5 2.5z" fill="currentColor"/></svg>',
+ gear:'<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4L5 11M11 5l1.4-1.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+ code:'<svg width="16" height="16" viewBox="0 0 16 16"><path d="M5.5 4.5L2 8l3.5 3.5M10.5 4.5L14 8l-3.5 3.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+ issue:'<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/></svg>',
+ pr:'<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="4" cy="3.5" r="1.6" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="4" cy="12.5" r="1.6" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="12" cy="12.5" r="1.6" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M4 5v6M12 11V6a2 2 0 0 0-2-2H8" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>',
+ graph:'<svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 2v12h12M5 11V8M8 11V5M11 11V7" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>',
+ upload:'<svg width="40" height="40" viewBox="0 0 16 16"><path d="M4 1.75h5l3 3v9.5H4z M9 1.75v3h3" stroke="#59636e" stroke-width=".8" fill="none"/><path d="M8 12V7.5M6 9.5l2-2 2 2" stroke="#59636e" stroke-width=".8" fill="none" stroke-linecap="round"/></svg>',
+ rocket:'<svg width="16" height="16" viewBox="0 0 16 16"><path d="M9 2.5c2.5-1 4.5-1 4.5-1s0 2-1 4.5L9 9.5 6.5 7z M6.5 7L4 7.5 2.5 9.5l3 .5M9 9.5L8.5 12l-2 1.5-.5-3" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round"/></svg>',
+};
+
+/* ---------------- state ---------------- */
+const fresh=()=>({view:"intro",pin:"",screen:"landing",hist:[],loggedIn:false,user:"",menu:null,repo:null,pending:[],visited:false,flash:null,runSeq:0,runId:null,draft:{branch:null,folder:"/",source:"branch"},verify:false});
+let S=fresh();
+let OPT={hints:true,speed:"fast",coachMin:false,coachList:false};
+const SPEED={fast:{q:800,b:3500,d:3500},real:{q:4000,b:28000,d:22000}};
+
+const U=()=>S.user||"user";
+const R=()=>S.repo?S.repo.name:"repo";
+const siteUrl=()=>`https://${U().toLowerCase()}.github.io/${R()}/`;
+const ago=t=>{const s=Math.round((Date.now()-t)/1000);if(s<45)return "now";const m=Math.round(s/60);return m<60?`${m} minute${m>1?"s":""} ago`:`${Math.round(m/60)} hours ago`};
+const fmtDur=ms=>{const s=Math.round(ms/1000);return s<60?`${s}s`:`${Math.floor(s/60)}m ${s%60}s`};
+const fmtSize=n=>n<1024?`${n} Bytes`:n<1048576?`${(n/1024).toFixed(1)} KB`:`${(n/1048576).toFixed(1)} MB`;
+
+let toastT;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2000)}
+
+const KEY=(u,p)=>`ghsim:${u.toLowerCase()}:${p}`;
+function load(u,p){try{const v=localStorage.getItem(KEY(u,p));return v?JSON.parse(v):null}catch(e){return null}}
+let saveT;function save(){if(!S.user||!S.pin)return;clearTimeout(saveT);saveT=setTimeout(()=>{const o={...S,menu:null,flash:null,fd:null};
+ try{localStorage.setItem(KEY(S.user,S.pin),JSON.stringify(o))}catch(e){try{const lite=JSON.parse(JSON.stringify(o));if(lite.repo){lite.repo.files.forEach(f=>{if(f.dataUrl)f.dataUrl=""});lite.repo.runs.forEach(r=>r.snapshot.forEach(f=>{if(f.dataUrl)f.dataUrl=""}))}localStorage.setItem(KEY(S.user,S.pin),JSON.stringify(lite))}catch(_){}}},300)}
+function wipe(){try{if(S.user&&S.pin)localStorage.removeItem(KEY(S.user,S.pin))}catch(e){}}
+/* ---------------- runs ---------------- */
+function runStatus(r){const t=Date.now()-r.start,d=r.d;if(t<d.q)return "queued";if(t<d.q+d.b)return "build";if(t<d.q+d.b+d.d)return "deploy";return "success"}
+function newRun(msg){const R0=S.repo;S.runSeq++;const r={id:1000+S.runSeq*7,num:S.runSeq,start:Date.now(),msg,by:U(),d:{...SPEED[OPT.speed]},folder:R0.pages.folder,snapshot:R0.files.map(f=>({...f}))};R0.runs.unshift(r);return r}
+function liveRun(){return S.repo?S.repo.runs.find(r=>runStatus(r)==="success"):null}
+function activeRun(){return S.repo?S.repo.runs.find(r=>runStatus(r)!=="success"):null}
+function pagesOn(){return S.repo&&S.repo.pages.branch==="main"}
+function hasRootIndex(){return S.repo&&S.repo.files.some(f=>f.name==="index.html")}
+
+/* ---------------- navigation ---------------- */
+function nav(screen,opts={}){if(S.screen!==screen&&!opts.noPush)S.hist.push(S.screen);S.screen=screen;S.menu=null;if(opts.flash!==undefined)S.flash=opts.flash;else S.flash=null;render();window.scrollTo(0,0)}
+function back(){if(!S.hist.length)return;S.screen=S.hist.pop();S.menu=null;S.flash=null;render()}
+
+/* ---------------- header pieces ---------------- */
+function header(crumb,repoMode){
+ return `<div class="hd ${repoMode?"repo":""}">
+  <span class="ib hide-sm">${ico.menu}</span>
+  <button class="mark" data-act="home" aria-label="홈"><svg viewBox="0 0 32 32" width="100%" height="100%" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="currentColor"/><path d="M9.2 9.5c-1.6.4-2.6 2.6-2.4 5.2.1 1.5 1 2.4 2 2.1.9-.3 1-1.6 1.2-3 .2-1.4.6-2.6.2-3.6-.2-.5-.6-.8-1-.7zM22.8 9.5c1.6.4 2.6 2.6 2.4 5.2-.1 1.5-1 2.4-2 2.1-.9-.3-1-1.6-1.2-3-.2-1.4-.6-2.6-.2-3.6.2-.5.6-.8 1-.7z" fill="var(--dog-bg)"/><path d="M16 9.6c-3.6 0-5.8 2.6-5.8 6.3 0 2.4 1 4.3 2.6 5.4-.2 1.6.4 3.1 1.6 3.9.5.3 1 .5 1.6.5s1.1-.2 1.6-.5c1.2-.8 1.8-2.3 1.6-3.9 1.6-1.1 2.6-3 2.6-5.4 0-3.7-2.2-6.3-5.8-6.3z" fill="var(--dog-bg)"/><circle cx="13.6" cy="15.4" r="1.1" fill="currentColor"/><circle cx="18.4" cy="15.4" r="1.1" fill="currentColor"/><path d="M14.6 19c0-.8.6-1.2 1.4-1.2s1.4.4 1.4 1.2c0 .6-.7 1.1-1.4 1.1s-1.4-.5-1.4-1.1z" fill="currentColor"/><path d="M15 23.2c.3.5.6.7 1 .7s.7-.2 1-.7" stroke="#e9708a" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg></button>
+  <div class="crumb">${crumb}</div><div class="sp"></div>
+  <div class="search">${ico.search}<span>Type <span class="pill" style="padding:0 4px">/</span> to search</span></div>
+  <button class="ib plusbtn" data-act="menu:plus" data-coach="plus">${ico.plus}${ico.caret}</button>
+  <span class="ib hide-sm">${ico.issue}</span>
+  <button class="ava" data-act="menu:user">${esc(U().slice(0,1))}</button>
+  ${S.menu==="plus"?`<div class="menu" style="right:56px;top:48px">
+     <button class="mi" data-act="go:new" data-coach="new-repo">${ico.repo} New repository</button>
+     <button class="mi dis">${ico.repo} Import repository</button><hr>
+     <button class="mi dis">${ico.code} New codespace</button><button class="mi dis">${ico.code} New gist</button></div>`:""}
+  ${S.menu==="user"?`<div class="menu" style="right:16px;top:48px"><div class="mh">${esc(U())}</div><hr>
+     <button class="mi" data-act="home">${ico.repo} Your repositories</button><button class="mi dis">${ico.gear} Settings</button><hr>
+     <button class="mi" data-act="signout">Sign out</button></div>`:""}
+ </div>`;
+}
+function repoHead(active){
+ const r=S.repo;
+ const tabs=[["code","Code",ico.code],["issues","Issues",ico.issue],["pulls","Pull requests",ico.pr],["actions","Actions",ico.play],["insights","Insights",ico.graph],["settings","Settings",ico.gear]];
+ return header(`<a data-act="home">${esc(U())}</a><span class="sep">/</span><a data-act="go:repo">${esc(r.name)}</a>`,true)+
+ `<div class="rtabs">${tabs.map(([k,l,i])=>`<button class="rtab ${active===k?"on":""}" data-act="tab:${k}" data-coach="tab-${k}">${i}${l}${k==="issues"||k==="pulls"?'<span class="cnt">0</span>':""}</button>`).join("")}</div>`;
+}
+
+/* ---------------- screens ---------------- */
+const V={};
+const DOG=`<svg viewBox="0 0 32 32" width="100%" height="100%" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="currentColor"/><path d="M9.2 9.5c-1.6.4-2.6 2.6-2.4 5.2.1 1.5 1 2.4 2 2.1.9-.3 1-1.6 1.2-3 .2-1.4.6-2.6.2-3.6-.2-.5-.6-.8-1-.7zM22.8 9.5c1.6.4 2.6 2.6 2.4 5.2-.1 1.5-1 2.4-2 2.1-.9-.3-1-1.6-1.2-3-.2-1.4-.6-2.6-.2-3.6.2-.5.6-.8 1-.7z" fill="var(--dog-bg)"/><path d="M16 9.6c-3.6 0-5.8 2.6-5.8 6.3 0 2.4 1 4.3 2.6 5.4-.2 1.6.4 3.1 1.6 3.9.5.3 1 .5 1.6.5s1.1-.2 1.6-.5c1.2-.8 1.8-2.3 1.6-3.9 1.6-1.1 2.6-3 2.6-5.4 0-3.7-2.2-6.3-5.8-6.3z" fill="var(--dog-bg)"/><circle cx="13.6" cy="15.4" r="1.1" fill="currentColor"/><circle cx="18.4" cy="15.4" r="1.1" fill="currentColor"/><path d="M14.6 19c0-.8.6-1.2 1.4-1.2s1.4.4 1.4 1.2c0 .6-.7 1.1-1.4 1.1s-1.4-.5-1.4-1.1z" fill="currentColor"/><path d="M15 23.2c.3.5.6.7 1 .7s.7-.2 1-.7" stroke="#e9708a" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>`;
+V.landing=()=>`<div class="land">
+ <div class="land-h"><span class="ham">${ico.menu.replace('width="16" height="16"','width="28" height="28"')}</span><span class="mark inv" style="width:46px;height:46px">${DOG}</span>
+  <nav class="land-nav"><span>Product ${ico.caret}</span><span>Solutions ${ico.caret}</span><span>Resources ${ico.caret}</span><span>Open Source ${ico.caret}</span><span>Pricing</span></nav>
+  <div class="land-r"><span class="srch">${ico.search}</span><button class="sib" data-act="go:login" data-coach="land-signin">Sign in</button><button class="sup" data-act="signup">Sign up</button></div></div>
+ <div class="land-b"><h1>함께 만드는<br>우리 반 웹앱</h1>
+  <p>바이브코딩으로 만든 index.html을 저장소에 올리고, 누구나 들어올 수 있는 주소로 배포하는 연습 공간</p>
+  <form class="signup" id="f-signup"><input id="su-mail" placeholder="이메일 주소 입력" autocomplete="off"><button type="submit">가입</button></form>
+  <button class="land-out" data-act="go:login">이미 계정이 있으면 Sign in</button>
+  <div class="editor"><div class="editor-in"><div class="ed-tabs"><span class="on">index.html</span><span>style.css</span><span>quiz.js</span></div>
+  <div class="ed-code"><i>1</i><span class="c">&lt;!-- 우리 반 과학 퀴즈 --&gt;</span>
+<i>2</i>&lt;<span class="t">h1</span>&gt;식물이 양분을 만드는 과정은?&lt;/<span class="t">h1</span>&gt;
+<i>3</i>&lt;<span class="t">button</span> <span class="k">class</span>=<span class="s">"answer"</span>&gt;광합성&lt;/<span class="t">button</span>&gt;
+<i>4</i>&lt;<span class="t">script</span> <span class="k">src</span>=<span class="s">"quiz.js"</span>&gt;&lt;/<span class="t">script</span>&gt;</div></div></div>
+ </div></div>`;
+V.login=()=>`<div class="lg2"><div class="wrapf">
+ <div style="display:flex;justify-content:center"><span class="mark" style="width:56px;height:56px">${DOG}</span></div>
+ <h1>Sign in <span class="pill" style="font-family:var(--f-kr);font-weight:600">연습용</span></h1>
+ <form id="f-login" class="f-box" autocomplete="off" style="display:flex;flex-direction:column;gap:16px">
+  <div><label class="lab" for="lg-user">Username or email address</label><input class="in" id="lg-user" data-coach="login-user" value="${esc(S.user)}" spellcheck="false" autocapitalize="off"><div class="err" id="lg-err" hidden></div></div>
+  <div><label class="lab" for="lg-pin"><span style="font-family:var(--f-kr)">나만 아는 번호</span><a style="font-size:15px;font-family:var(--f-kr)" data-act="pin-help">번호 안내</a></label>
+   <input class="in num" id="lg-pin" inputmode="numeric" maxlength="8" placeholder="숫자 4~8자리" value="${esc(S.pin||"")}"><div class="note" style="font-family:var(--f-kr)">실제 비밀번호 입력 금지. 이어 하기 열쇠</div></div>
+  <button class="btn green go" type="submit" data-coach="login-btn">Sign in</button>
+ </form>
+ <div class="orline">or</div>
+ <button class="sso" data-act="sso:Google"><span class="gi">G</span>Continue with Google</button>
+ <button class="sso" data-act="sso:Apple"><span class="gi">A</span>Continue with Apple</button>
+ <div class="links"><span>New here? <a data-act="signup">Create an account</a></span><a data-act="passkey">Sign in with a passkey</a></div>
+ </div>
+ <div class="foot"><span>Terms</span><span>Privacy</span><span>Docs</span><span>Contact Support</span></div></div>`;
+V.verify=()=>`<div class="login">
+ <span class="mark bigmark" style="margin-top:8px">${DOG}</span>
+ <h1>Device verification</h1>
+ <div class="card" style="text-align:center">
+  <p style="margin:0;font-size:14px">Email sent to your registered address. Enter the code to verify this device.</p>
+  <div class="code-boxes num"><span>4</span><span>8</span><span>2</span><span>1</span><span>7</span><span>3</span></div>
+  <p class="note" style="margin:0;font-family:var(--f-kr)">연습 화면: 코드 자동 입력. 실제로는 가입 메일로 온 6자리 입력</p>
+  <button class="btn green" style="width:100%" data-act="verify" data-coach="verify-btn">Verify</button>
+ </div></div>`;
+V.dashboard=()=>{const r=S.repo;return header("Dashboard")+`<div class="dash">
+ <aside><div style="display:flex;align-items:center;justify-content:space-between"><span class="h3" style="font-size:14px">Top repositories</span><button class="btn sm green" data-act="go:new" data-coach="dash-new">${ico.repo} New</button></div>
+  <input class="in" placeholder="Find a repository…" disabled>
+  ${r?`<a class="repoli" data-act="go:repo" data-coach="dash-repo"><span class="ava" style="width:20px;height:20px;font-size:10px">${esc(U()[0])}</span>${esc(U())}/${esc(r.name)}</a>`:`<p class="muted" style="margin:0;font-size:13px">No repositories yet.</p>`}
+ </aside>
+ <main><div class="feed"><h2 class="h2">Home</h2>
+  ${!r?`<div class="box" style="padding:20px;display:flex;flex-direction:column;gap:10px"><b>Start a new repository for ${esc(U())}</b><span class="muted">A repository contains all of your project's files, revision history, and collaborator discussion.</span><div><button class="btn green" data-act="go:new">Create repository</button></div></div>`:""}
+  ${[1,2,3].map(()=>`<div class="box" style="padding:16px;display:flex;flex-direction:column;gap:10px"><div class="skel" style="width:40%"></div><div class="skel" style="width:85%"></div><div class="skel" style="width:65%"></div></div>`).join("")}
+ </div></main></div>`};
+V.new=()=>{const d=S.newForm||(S.newForm={name:"",desc:"",vis:"public",readme:false});const nm=normName(d.name);
+ return header("New repository")+`<div class="wrap narrow" style="display:flex;flex-direction:column;gap:16px">
+ <div><h1 class="h1">Create a new repository</h1><p class="muted" style="margin:4px 0 0">Repositories contain a project's files and version history. Have a project elsewhere? <a>Import a repository.</a></p><p class="muted" style="margin:6px 0 0;font-style:italic;font-size:13px">Required fields are marked with an asterisk (*).</p></div>
+ <hr class="divider" style="margin:0">
+ <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
+  <div><span class="lbl">Owner <span class="req">*</span></span><span class="sel"><span class="ava" style="width:20px;height:20px;font-size:10px">${esc(U()[0])}</span>${esc(U())}${ico.caret}</span></div>
+  <span style="font-size:20px;padding-bottom:2px">/</span>
+  <div style="flex:1;min-width:200px"><label class="lbl" for="nr-name">Repository name <span class="req">*</span></label><input class="in" id="nr-name" data-coach="nr-name" value="${esc(d.name)}" spellcheck="false" autocapitalize="off"></div>
+ </div>
+ <div id="nr-msg">${nameMsg(d.name)}</div>
+ <p class="muted" style="margin:0">Great repository names are short and memorable. Need inspiration? How about <a data-act="suggest"><b>${esc(SUGG)}</b></a>?</p>
+ <div><label class="lbl" for="nr-desc">Description <span class="muted" style="font-weight:400">(optional)</span></label><input class="in" id="nr-desc" value="${esc(d.desc)}"></div>
+ <hr class="divider" style="margin:0">
+ <div data-coach="nr-vis">
+  <label class="radio"><input type="radio" name="vis" value="public" ${d.vis==="public"?"checked":""}><span>${ico.globe}</span><span><b>Public</b><small>Anyone on the internet can see this repository. You choose who can commit.</small></span></label>
+  <label class="radio"><input type="radio" name="vis" value="private" ${d.vis==="private"?"checked":""}><span>${ico.lock}</span><span><b>Private</b><small>You choose who can see and commit to this repository.</small></span></label>
+ </div>
+ <hr class="divider" style="margin:0">
+ <div><b>Initialize this repository with:</b>
+  <label class="radio"><input type="checkbox" id="nr-readme" ${d.readme?"checked":""}><span><b>Add a README file</b><small>This is where you can write a long description for your project.</small></span></label></div>
+ <hr class="divider" style="margin:0">
+ <p class="muted" style="margin:0;display:flex;gap:6px;align-items:center">${ico.issue} You are creating a <span id="nr-vtext">${d.vis}</span> repository in your personal account.</p>
+ <div style="display:flex;justify-content:flex-end"><button class="btn green" id="nr-create" data-act="create" data-coach="nr-create" ${nm?"":"disabled"}>Create repository</button></div>
+ </div>`};
+const SUGG="supreme-science-app";
+function normName(n){return n.trim().replace(/[^A-Za-z0-9._-]+/g,"-").replace(/^-+|-+$/g,"")}
+function nameMsg(n){if(!n.trim())return "";const nm=normName(n);if(!nm)return `<div class="err">New repository name must not be blank</div>`;
+ return (nm!==n.trim()?`<div class="note" style="color:var(--yellow)">Your new repository will be created as <b>${esc(nm)}</b>.</div>`:"")+`<div class="ok">${ico.check}${esc(nm)} is available.</div>`}
+
+V.repo=()=>{const r=S.repo;const lr=liveRun();const ar=activeRun();
+ const fl=S.flash?`<div class="flash ok">${esc(S.flash)}</div>`:"";
+ if(!r.files.length)return repoHead("code")+`<div class="wrap" style="display:flex;flex-direction:column;gap:16px">${fl}
+  <div style="display:flex;align-items:center;gap:8px"><span class="ava" style="width:24px;height:24px;font-size:11px">${esc(U()[0])}</span><h2 class="h2">${esc(r.name)}</h2><span class="pill">${r.vis==="public"?"Public":"Private"}</span></div>
+  <div class="quick"><b>Quick setup — if you've done this kind of thing before</b>
+   <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span class="btn sm" style="background:var(--bg)">HTTPS</span><span class="btn sm" style="background:transparent">SSH</span><input class="in mono" style="flex:1;min-width:200px;font-size:12px" value="https://github.com/${esc(U())}/${esc(r.name)}.git" readonly></div>
+   <p style="margin:0">Get started by <a data-act="nofeature">creating a new file</a> or <a data-act="go:upload" data-coach="upload-link">uploading an existing file</a>. We recommend every repository include a README, LICENSE, and .gitignore.</p></div>
+  <div><b>…or create a new repository on the command line</b><div class="codebox" style="margin-top:8px">echo "# ${esc(r.name)}" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/${esc(U())}/${esc(r.name)}.git
+git push -u origin main</div></div></div>`;
+ const last=r.commits[0];
+ const files=[...r.files].sort((a,b)=>a.name.localeCompare(b.name));
+ return repoHead("code")+`<div class="wrap" style="display:flex;flex-direction:column;gap:16px">${fl}
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="ava" style="width:24px;height:24px;font-size:11px">${esc(U()[0])}</span><h2 class="h2">${esc(r.name)}</h2><span class="pill">${r.vis==="public"?"Public":"Private"}</span></div>
+  <div class="rgrid"><div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:relative">
+    <span class="sel">${ico.pr} main ${ico.caret}</span><span class="muted hide-sm" style="font-size:13px">1 Branch · 0 Tags</span><div class="sp"></div>
+    <div class="relbox"><button class="btn" data-act="menu:addfile" data-coach="addfile">Add file ${ico.caret}</button>
+     ${S.menu==="addfile"?`<div class="menu" style="right:0;top:38px"><button class="mi" data-act="nofeature">${ico.plus} Create new file</button><button class="mi" data-act="go:upload" data-coach="upload-files">${ico.upload.replace('width="40" height="40"','width="16" height="16"')} Upload files</button></div>`:""}</div>
+    <button class="btn green" data-act="nofeature">${ico.code} Code ${ico.caret}</button>
+   </div>
+   <div class="box ftable">
+    <div class="box-h"><span class="ava" style="width:20px;height:20px;font-size:10px">${esc(U()[0])}</span><b>${esc(U())}</b><span class="muted" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(last.msg)}</span><span class="muted num" style="font-size:12px">${ago(last.time)}</span><span class="muted hide-sm" style="font-size:12px">${r.commits.length} Commit${r.commits.length>1?"s":""}</span></div>
+    ${files.map(f=>`<div class="row">${ico.file}<span class="nm ${f.name!=="index.html"&&/^index/i.test(f.name)?"":""}">${esc(f.name)}</span><span class="msg hide-sm">${esc(f.commit)}</span><span class="tm num">${ago(f.time)}</span></div>`).join("")}
+   </div>
+   ${!hasRootIndex()?`<div class="helper"><b>확인 필요</b><span>저장소 첫 화면에 <span class="mono">index.html</span> 파일 없음. 이 상태로 배포하면 404 화면</span></div>`:""}
+   ${r.files.some(f=>f.name==="README.md")?`<div class="box"><div class="box-h"><b>README</b></div><div style="padding:24px"><h2 class="h2" style="border-bottom:1px solid var(--line);padding-bottom:8px">${esc(r.name)}</h2><p>${esc(r.desc||"")}</p></div></div>`:""}
+  </div>
+  <div class="rside">
+   <div class="sec"><span class="h3">About</span><span class="muted">${esc(r.desc)||"No description, website, or topics provided."}</span>${lr&&r.vis==="public"&&pagesOn()?`<a data-act="visit" style="display:flex;gap:6px;align-items:center;font-weight:600;word-break:break-all">${ico.globe}${esc(siteUrl().replace("https://",""))}</a>`:""}</div>
+   <div class="sec"><span class="h3">Releases</span><span class="muted" style="font-size:13px">No releases published</span></div>
+   <div class="sec"><span class="h3">Deployments <span class="cnt">${r.runs.length}</span></span>
+    ${r.runs.length?`<a data-act="go:actions" style="display:flex;gap:8px;align-items:center">${ar?'<span class="st run"></span>':'<span class="st ok"></span>'}<span style="color:var(--fg)">github-pages</span><span class="muted" style="font-size:12px">${ago((ar||lr).start)}</span></a>`:`<span class="muted" style="font-size:13px">No deployments</span>`}</div>
+   <div class="sec" style="border:0"><span class="h3">Languages</span><span style="display:flex;gap:6px;align-items:center;font-size:13px"><span style="width:8px;height:8px;border-radius:50%;background:#e34c26"></span><b>HTML</b> <span class="muted">100.0%</span></span></div>
+  </div></div></div>`};
+
+V.upload=()=>{const r=S.repo;const p=S.pending;
+ return repoHead("code")+`<div class="wrap" style="display:flex;flex-direction:column;gap:16px">
+  <div style="font-size:20px"><a data-act="go:repo" style="font-weight:600">${esc(r.name)}</a> <span class="muted">/</span></div>
+  <div class="drop" id="drop" data-coach="drop">${ico.upload}<div class="big">Drag files here to add them to your repository</div><div>Or <a data-act="pick" data-coach="pick">choose your files</a></div></div>
+  ${p.length?`<div class="box">${p.map((f,i)=>`<div class="row">${ico.file}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span><span class="muted num" style="font-size:12px">${fmtSize(f.size)}</span><button class="ib" style="width:28px;height:28px;border:0;background:none" data-act="unpend:${i}" aria-label="삭제">${ico.x}</button></div>`).join("")}</div>`:""}
+  <div class="av"><span class="ava hide-sm" style="width:40px;height:40px">${esc(U()[0])}</span>
+   <div class="box" style="flex:1;min-width:0">
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+     <span class="h3">Commit changes</span>
+     <input class="in" id="cm-msg" placeholder="Add files via upload">
+     <textarea class="in" id="cm-desc" placeholder="Add an optional extended description…"></textarea>
+     <label class="radio" style="padding:4px 0"><input type="radio" checked><span>${ico.pr}</span><span>Commit directly to the <span class="pill mono">main</span> branch.</span></label>
+     <label class="radio" style="padding:4px 0;opacity:.5"><input type="radio" disabled><span>${ico.pr}</span><span>Create a <b>new branch</b> for this commit and start a pull request.</span></label>
+    </div>
+    <div style="padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px"><button class="btn green" data-act="commit" data-coach="commit" ${p.length?"":"disabled"}>Commit changes</button><button class="btn" data-act="go:repo">Cancel</button></div>
+   </div></div></div>`};
+
+function setNav(on){
+ const g=(t,items)=>`<div class="g">${t}</div>`+items.map(([k,l,dis])=>`<button class="it ${on===k?"on":""}" ${dis?"":`data-act="set:${k}"`} data-coach="snav-${k}">${l}</button>`).join("");
+ return `<nav class="snav"><button class="it ${on==="general"?"on":""}" data-act="set:general">${ico.gear} General</button>
+  ${g("Access",[["collab","Collaborators",1],["mod","Moderation options",1]])}
+  ${g("Code and automation",[["branches","Branches",1],["tags","Tags",1],["rules","Rules",1],["actions","Actions",1],["hooks","Webhooks",1],["env","Environments",1],["codespaces","Codespaces",1],["pages","Pages"]])}
+  ${g("Security",[["sec","Advanced Security",1],["keys","Deploy keys",1],["secrets","Secrets and variables",1]])}</nav>`;
+}
+V.settings=()=>{const r=S.repo;
+ return repoHead("settings")+`<div class="wrap"><div class="sgrid">${setNav("general")}<div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+  ${S.flash?`<div class="flash ok">${esc(S.flash)}</div>`:""}
+  <h2 class="h2 subhead">General</h2>
+  <div><label class="lbl" for="st-name">Repository name</label><div style="display:flex;gap:8px;max-width:420px"><input class="in" id="st-name" value="${esc(r.name)}" spellcheck="false"><button class="btn" data-act="rename">Rename</button></div></div>
+  <label class="radio"><input type="checkbox" disabled><span><b>Template repository</b><small>Template repositories let users generate new repositories with the same directory structure and files.</small></span></label>
+  <h2 class="h2 subhead" style="margin-top:24px">Danger Zone</h2>
+  <div class="danger-zone"><div class="row"><div><b>Change repository visibility</b><div class="muted" style="font-size:13px">This repository is currently ${r.vis}.</div></div><button class="btn danger" data-act="vis" data-coach="vis-btn">Change visibility</button></div>
+  <div class="row"><div><b>Delete this repository</b><div class="muted" style="font-size:13px">Once you delete a repository, there is no going back. Please be certain.</div></div><button class="btn danger" data-act="del">Delete this repository</button></div></div>
+ </div></div></div>`};
+V.pages=()=>{const r=S.repo;const lr=liveRun(),ar=activeRun();const pg=r.pages;const dr=S.draft;
+ let top="";
+ if(r.vis==="private")top=`<div class="flash warn" data-coach="private-msg">${ico.lock}<div><b>Upgrade or make this repository public to enable Pages</b><div style="font-size:13px">GitHub Pages is available in public repositories with GitHub Free.</div></div></div>`;
+ else if(pagesOn()&&lr&&!ar)top=`<div class="live" data-coach="live-box"><div style="min-width:0"><div class="muted" style="font-size:13px">Your site is live at</div><a class="u" data-act="visit">${esc(siteUrl())}</a><div class="muted" style="font-size:12px;margin-top:2px">Last deployed by ${esc(U())} ${ago(lr.start+lr.d.q+lr.d.b+lr.d.d)}</div></div><button class="btn" data-act="visit" data-coach="visit">${ico.globe} Visit site</button></div>`;
+ else if(pagesOn()&&ar)top=`<div class="flash info" data-coach="building"><span class="st run"></span><div><b>Your GitHub Pages site is currently being built from the main branch.</b></div></div><div class="guide"><b>배포 시작</b><span>Save를 누르면 사이트 만들기가 자동으로 시작됨. 위쪽 <b>Actions</b> 탭에서 진행 상황 확인</span><span>보통 1~2분. 끝나면 이 화면 위에 사이트 주소 표시</span></div>`;
+ const branchVal=dr.branch||"None";
+ const changed=(dr.branch!==pg.branch)||(dr.folder!==pg.folder);
+ return repoHead("settings")+`<div class="wrap"><div class="sgrid">${setNav("pages")}<div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+  ${S.flash?`<div class="flash ok">${esc(S.flash)}</div>`:""}
+  <h2 class="h2 subhead">GitHub Pages</h2>
+  <p class="muted" style="margin:0">GitHub Pages is designed to host your personal, organization, or project pages from a GitHub repository.</p>
+  ${top}
+  <h3 class="h3 subhead" style="margin-top:8px">Build and deployment</h3>
+  <div><span class="lbl">Source</span><div class="relbox"><button class="sel" data-act="menu:source" ${r.vis==="private"?"disabled":""}>${dr.source==="branch"?"Deploy from a branch":"GitHub Actions"} ${ico.caret}</button>
+   ${S.menu==="source"?`<div class="menu" style="left:0;top:38px;min-width:280px"><div class="mh">Select source</div><button class="mi" data-act="source:branch"><span class="ck">${dr.source==="branch"?ico.check:""}</span><span><b>Deploy from a branch</b><br><small class="muted">Classic Pages experience</small></span></button><button class="mi" data-act="source:actions"><span class="ck">${dr.source==="actions"?ico.check:""}</span><span><b>GitHub Actions</b><br><small class="muted">Best for using frameworks and customizing your build process</small></span></button></div>`:""}</div></div>
+  <div><span class="lbl">Branch</span><p class="muted" style="margin:0 0 8px;font-size:13px">${pg.branch?`Your GitHub Pages site is currently being built from the <span class="pill mono">main</span> branch.`:"GitHub Pages is currently disabled. Select a source below to enable GitHub Pages for this repository."}</p>
+   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <div class="relbox"><button class="sel" data-act="menu:branch" data-coach="branch" ${r.vis==="private"?"disabled":""}>${ico.pr} ${branchVal} ${ico.caret}</button>
+     ${S.menu==="branch"?`<div class="menu" style="left:0;top:38px"><div class="mh">Select branch</div>${r.files.length?`<button class="mi" data-act="branch:main" data-coach="branch-main"><span class="ck">${dr.branch==="main"?ico.check:""}</span>main</button>`:`<div class="mi dis">Nothing to show</div>`}<button class="mi" data-act="branch:none"><span class="ck">${!dr.branch?ico.check:""}</span>None</button></div>`:""}</div>
+    ${dr.branch?`<div class="relbox"><button class="sel" data-act="menu:folder">${ico.repo} ${dr.folder==="/"?"/ (root)":"/docs"} ${ico.caret}</button>
+     ${S.menu==="folder"?`<div class="menu" style="left:0;top:38px"><div class="mh">Select folder</div><button class="mi" data-act="folder:/"><span class="ck">${dr.folder==="/"?ico.check:""}</span>/ (root)</button><button class="mi" data-act="folder:/docs"><span class="ck">${dr.folder==="/docs"?ico.check:""}</span>/docs</button></div>`:""}</div>`:""}
+    <button class="btn" data-act="save-pages" data-coach="save" ${changed&&r.vis==="public"?"":"disabled"}>Save</button>
+   </div>
+   <p class="muted" style="margin:8px 0 0;font-size:12px">Learn how to <a>add a Jekyll theme</a> to your site.</p></div>
+  <h3 class="h3 subhead" style="margin-top:8px">Custom domain</h3>
+  <div style="display:flex;gap:8px;max-width:420px"><input class="in" disabled><button class="btn" disabled>Save</button></div>
+  <label class="radio"><input type="checkbox" checked disabled><span><b>Enforce HTTPS</b><small>HTTPS provides a layer of encryption that prevents others from snooping on or tampering with traffic to your site.</small></span></label>
+ </div></div></div>`};
+
+function stIcon(s){return s==="success"?'<span class="st ok"></span>':s==="queued"?'<span class="st queue"></span>':'<span class="st run"></span>'}
+V.actions=()=>{const r=S.repo;
+ return repoHead("actions")+`<div class="wrap"><div class="agrid">
+  <nav class="snav"><div style="display:flex;justify-content:space-between;align-items:center;padding:0 8px 8px"><span class="h2" style="font-size:20px">Actions</span><button class="btn sm">New workflow</button></div>
+   <button class="it on">All workflows</button><button class="it">pages-build-deployment</button><div class="g">Management</div><button class="it">Caches</button><button class="it">Runners</button></nav>
+  <div style="min-width:0;display:flex;flex-direction:column;gap:12px">
+   <div class="guide"><b>Actions = 자동 작업 기록</b><span>Pages에서 Save를 누르거나 파일을 새로 올리면 <b>pages build and deployment</b> 작업이 자동으로 시작됨</span>
+    <span class="lg"><span class="st run"></span>진행 중 <span class="st ok"></span>배포 완료 · 줄을 누르면 단계별 진행 확인</span></div>
+   <h2 class="h2">All workflows</h2><p class="muted" style="margin:0">Showing runs from all workflows</p>
+   <div class="box"><div class="box-h"><b class="num">${r.runs.length} workflow run${r.runs.length===1?"":"s"}</b></div>
+   ${r.runs.length?r.runs.map((x,i)=>{const s=runStatus(x);return `<div class="runrow" data-act="run:${x.id}" ${i===0?'data-coach="run-row"':""}>${stIcon(s)}<div style="min-width:0"><b>pages build and deployment</b><div class="muted" style="font-size:12px">pages-build-deployment #${x.num}: by ${esc(x.by)}</div></div><div style="text-align:right;font-size:12px" class="muted num"><span class="pill mono">main</span><div>${ago(x.start)} · ${s==="success"?fmtDur(x.d.b+x.d.d):"In progress"}</div></div></div>`}).join(""):`<div style="padding:40px 16px;text-align:center" class="muted">There are no workflow runs yet.</div>`}
+   </div></div></div></div>`};
+V.run=()=>{const r=S.repo;const x=r.runs.find(y=>y.id===S.runId)||r.runs[0];const s=runStatus(x);const G=`<div class="guide"><b>배포 2단계</b><span><b>build</b>: index.html로 웹사이트 만들기 → <b>deploy</b>: 인터넷 주소에 올리기</span><span>둘 다 초록 체크가 되면 deploy 아래 주소가 내 사이트</span></div>`;
+ const bS=s==="queued"?"wait":s==="build"?"run":"ok",dS=s==="success"?"ok":s==="deploy"?"run":"wait";
+ const ic=k=>k==="ok"?'<span class="st ok"></span>':k==="run"?'<span class="st run"></span>':'<span class="st wait"></span>';
+ return repoHead("actions")+`<div class="wrap" style="display:flex;flex-direction:column;gap:16px">
+  <div><a data-act="go:actions">← pages-build-deployment</a></div>${G}
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">${stIcon(s)}<h1 class="h1" style="font-size:22px">pages build and deployment <span class="muted num">#${x.num}</span></h1></div>
+  <div class="box"><div class="box-h" style="gap:24px">
+   <div><div class="muted" style="font-size:12px">Triggered via dynamic</div><b>${esc(x.by)}</b> <span class="muted">${ago(x.start)}</span></div>
+   <div><div class="muted" style="font-size:12px">Status</div><b>${s==="success"?"Success":s==="queued"?"Queued":"In progress"}</b></div>
+   <div><div class="muted" style="font-size:12px">Total duration</div><b class="num">${s==="success"?fmtDur(x.d.q+x.d.b+x.d.d):"—"}</b></div></div>
+   <div class="graph">
+    <div class="job"><div class="t">${ic(bS)} build</div><span class="muted num" style="font-size:12px">${bS==="ok"?fmtDur(x.d.b):bS==="run"?"Running…":"Waiting"}</span></div>
+    <div class="edge"></div>
+    <div class="job"><div class="t">${ic(dS)} deploy</div>${dS==="ok"?`<a data-act="visit" data-coach="run-url" style="font-size:12px;word-break:break-all">${esc(siteUrl())}</a>`:`<span class="muted" style="font-size:12px">${dS==="run"?"Deploying…":"Waiting"}</span>`}</div>
+   </div></div></div>`};
+
+/* site */
+const SAMPLE=`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우리 반 과학 퀴즈</title>
+<style>body{margin:0;font-family:system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#f3f7f4;color:#17301f;display:grid;place-items:center;min-height:100vh;word-break:keep-all}
+.c{background:#fff;border-radius:18px;padding:28px;max-width:420px;width:calc(100% - 32px);box-shadow:0 8px 30px rgba(0,60,20,.1);text-align:center}
+h1{margin:0 0 6px;font-size:22px}p{color:#4c6a55;margin:0 0 18px}button{display:block;width:100%;margin:8px 0;padding:12px;border-radius:10px;border:1px solid #cfe3d5;background:#f7fbf8;font-size:16px;cursor:pointer}
+button.o{background:#1f8a4c;color:#fff;border-color:#1f8a4c}button.x{background:#fdecec;border-color:#f3b4b4}</style></head>
+<body><div class="c"><h1>우리 반 과학 퀴즈</h1><p>식물이 양분을 만드는 과정은?</p>
+<button data-a="x">호흡</button><button data-a="o">광합성</button><button data-a="x">증산 작용</button></div><script>document.querySelectorAll("button").forEach(function(b){b.addEventListener("click",function(){b.className=b.dataset.a})})<\/script></body></html>`;
+function resolveSite(){const r=S.repo;if(!r||r.vis!=="public"||!pagesOn())return null;const x=liveRun();if(!x)return null;const path=x.folder==="/"?"index.html":"docs/index.html";const f=x.snapshot.find(y=>y.name===path);if(!f)return null;
+ let html=f.content||"";x.snapshot.filter(y=>y.dataUrl).forEach(img=>{const n=img.name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");html=html.replace(new RegExp(`(["'(])(\\./)?${n}(["')])`,"g"),`$1${img.dataUrl}$3`)});return html}
+V.site=()=>{const html=resolveSite();
+ if(html==null)return `<div class="site"><div class="p404"><div class="n">404</div><h1 class="h1" style="font-size:22px">There isn't a GitHub Pages site here.</h1>
+  <p class="muted">If you're trying to publish one, <a>read the full documentation</a> to learn how to set up GitHub Pages for your repository, organization, or user account.</p>
+  <div class="helper" style="margin-top:12px;text-align:left;max-width:520px"><b>원인 찾기</b><span>${why404()}</span></div></div></div>`;
+ return `<div class="site"><iframe id="site-frame" title="배포된 사이트" sandbox="allow-scripts allow-forms"></iframe></div>`};
+function why404(){const r=S.repo;if(!r)return "저장소 없음";if(r.vis!=="public")return "저장소가 Private 상태";if(!pagesOn())return "Pages 설정에서 main 브랜치 저장 전";const x=liveRun();if(!x)return "아직 첫 배포 진행 중. 1~2분 뒤 새로고침";
+ if(x.folder!=="/")return "Pages 폴더가 /docs로 설정됨. / (root)로 변경 필요";const bad=x.snapshot.find(f=>/index/i.test(f.name)&&f.name!=="index.html");return bad?`파일 이름이 <span class="mono">${esc(bad.name)}</span>. 정확히 index.html이어야 함`:"저장소 첫 화면에 index.html 없음"}
+
+/* ---------------- virtual file dialog ---------------- */
+const VFS={"다운로드":[{name:"index.html",type:"HTML 문서",size:1690,html:1},{name:"연수 안내.pdf",type:"PDF 문서",size:482133},{name:"수업 사진.png",type:"PNG 파일",size:1203344}],
+ "바탕 화면":[{name:"학급 시간표.xlsx",type:"Excel 워크시트",size:18210}],"문서":[{name:"수업 계획.hwp",type:"한글 문서",size:40960}],"사진":[{name:"현장체험학습.jpg",type:"JPG 파일",size:2210311}]};
+function fileDialog(){const d=S.fd;const list=VFS[d.folder]||[];
+ $("#layer").innerHTML=`<div class="scrim"><div class="xwin fdw"><div class="wtitle" style="background:#f3f3f3;color:#1f2328;border-bottom:1px solid #ddd"><b style="font-weight:600;font-family:var(--f-kr)">열기</b><span class="wctl"><i data-act="fd-close" style="cursor:pointer;font-size:16px">×</i></span></div>
+ <div class="fdpath">내 PC › <b>${d.folder}</b></div>
+ <div class="xgrid fdg"><div class="xp fdnav">${Object.keys(VFS).map(f=>`<button class="fdn ${f===d.folder?"on":""}" data-act="fd-folder:${f}">${AICO.folder}${f}</button>`).join("")}</div>
+  <div class="xp"><div class="fdrow fdhd"><span>이름</span><span class="hide-x">유형</span><span class="hide-x">크기</span></div>
+  ${list.map(f=>`<button class="fdrow ${d.sel.includes(f.name)?"sel":""}" data-act="fd-sel:${f.name}" ${f.html?'data-coach="fd-index"':""}><span class="nm">${f.html?AICO.html:AICO.folder.replace("#e3b341","#cfd6de").replace("#9a6700","#8c959f")}${esc(f.name)}</span><span class="hide-x">${f.type}</span><span class="hide-x num">${fmtSize(f.size)}</span></button>`).join("")}</div></div>
+ <div class="df" style="font-family:var(--f-kr);flex-wrap:wrap"><span style="font-size:13px">파일 이름</span><input class="in" style="flex:1;min-width:140px" readonly value="${esc(d.sel.join(", "))}">
+  <button class="btn" style="background:#0969da;color:#fff;border-color:#0969da" data-act="fd-open" data-coach="fd-open" ${d.sel.length?"":"disabled"}>열기</button><button class="btn" data-act="fd-close">취소</button>
+  <a data-act="fd-real" style="font-size:13px;flex-basis:100%">내 컴퓨터에서 실제 파일 찾기</a></div></div></div>`;
+ document.querySelectorAll(".fdrow[data-act]").forEach(b=>b.addEventListener("dblclick",()=>{S.fd.sel=[b.dataset.act.split(":")[1]];fdOpen()}));
+ placeHot(hint());
+}
+function fdOpen(){const d=S.fd;if(!d||!d.sel.length)return;const list=VFS[d.folder];
+ d.sel.forEach(n=>{const f=list.find(x=>x.name===n);if(!f)return;const o=f.html?{name:f.name,size:new Blob([SAMPLE]).size,content:SAMPLE}:{name:f.name,size:f.size,content:""};S.pending=S.pending.filter(p=>p.name!==o.name);S.pending.push(o)});
+ const c=d.sel.length;closeModal();render();toast(`${c}개 파일 추가`)}
+
+/* ---------------- intro / check ---------------- */
+function introHTML(){return `<div class="page-in">
+ <div class="hero"><div><div class="eyebrow">바이브코딩 연수 · 배포 실습</div><h1>GitHub 배포 시뮬레이터</h1>
+ <p class="lead">로그인부터 저장소 만들기, index.html 업로드, Pages 배포, 내 사이트 접속까지 가상 화면에서 미리 연습</p></div>
+ <div class="hero-b"><button class="kbtn" data-act="view:sim">${S.loggedIn?"이어서 연습":"시작"}</button>${S.loggedIn?'<button class="kbtn ghost" data-act="view:check">점검</button>':""}</div>
+ <div class="mobile-tip">휴대폰·태블릿은 가로 화면 권장. 두 손가락으로 확대 가능</div>
+ <div><p class="secttl">사용 방법</p><ol class="flow5">
+  ${[["로그인",["Sign in"],"아이디 + 나만 아는 번호"],["저장소 만들기",["+","New repository","Create repository"],"Public 선택"],["파일 올리기",["uploading an existing file","Commit changes"],"index.html 선택"],["Pages 켜기",["Settings","Pages","main","Save"],"자동 배포 시작"],["사이트 확인",["Actions","Visit site"],"초록 체크 후 내 주소 접속"]]
+   .map((x,i)=>`<li><span class="n num">${i+1}</span><div class="fb"><strong>${x[0]}</strong><div class="chips">${x[1].map(c=>`<span class="kc">${c}</span>`).join('<span class="ar">›</span>')}</div><span class="cap">${x[2]}</span></div></li>`).join("")}
+ </ol></div>
+ <div><p class="secttl">안내 사항</p><div class="ncards">
+  <section class="nc must"><h3>꼭 지킬 것</h3><ul>
+   <li><b>실제 비밀번호 입력 금지</b><span>학번·전화번호도 금지</span></li>
+   <li><b>저장소는 Public</b><span>Private은 배포 불가</span></li>
+   <li><b>공용 PC는 「초기화」</b><span>마친 뒤 위쪽 버튼</span></li></ul></section>
+  <section class="nc"><h3>도움 기능</h3><ul>
+   <li><b>빨간 말풍선</b><span>영어 버튼의 한글 뜻과 하는 일</span></li>
+   <li><b>배포 미션</b><span>오른쪽 아래, 다음 할 일 안내</span></li>
+   <li><b>PC 화면 · 모바일 화면</b><span>위쪽 버튼으로 화면 전환</span></li>
+   <li><b>빠른 배포</b><span>배포 대기 시간 약 8초로 단축</span></li></ul></section>
+  <section class="nc"><h3>알아 두기</h3><ul>
+   <li><b>가상 화면</b><span>실제 계정에는 아무것도 안 올라감</span></li>
+   <li><b>이어 하기</b><span>같은 브라우저에서 같은 아이디 + 번호</span></li>
+   <li><b>데스크탑 앱</b><span>설치형 앱으로 올리는 방법 연습</span></li>
+   <li><b>404 화면 체험</b><span>Private 저장소, /docs 폴더 선택 시</span></li></ul></section>
+ </div></div></div>`}
+function checkList(){const r=S.repo,lr=liveRun();const commitRuns=r?r.runs.filter(x=>x.msg!=="pages build and deployment").length:0;
+ return [
+  ["로그인","아이디와 나만 아는 번호로 로그인",S.loggedIn],
+  ["Public 저장소","무료 계정은 Public 저장소에서만 Pages 사용 가능",!!r&&r.vis==="public"],
+  ["저장소 이름","영문 소문자·숫자·하이픈. 주소 끝부분이 됨",!!r&&/^[a-z0-9-]+$/.test(r.name)],
+  ["index.html 위치","파일 이름 정확히 index.html, 폴더 안이 아닌 저장소 첫 화면",hasRootIndex()],
+  ["Pages 설정","Source: Deploy from a branch · Branch: main · / (root) 저장",!!r&&r.pages.branch==="main"&&r.pages.folder==="/"],
+  ["배포 완료","Actions 탭 pages build and deployment 초록 체크",!!lr],
+  ["사이트 접속","아이디.github.io/저장소이름 주소로 접속",S.visited&&resolveSite()!=null],
+  ["수정 배포","같은 이름 index.html 다시 올려 재배포 (선택)",commitRuns>0,true]]}
+function checkHTML(){const L=checkList(),req=L.filter(x=>!x[3]),done=req.filter(x=>x[2]).length,r=S.repo;
+ return `<div class="page-in">
+ <div><div class="eyebrow">자기 점검</div><h1>배포 점검</h1><p class="lead">연습 기록 기준 자동 확인. 미완 항목은 연습 화면으로 돌아가 다시 진행</p></div>
+ <div class="score"><div><small>필수 항목</small><b>${done} / ${req.length}</b></div><div><small>배포 횟수</small><b>${r?r.runs.length:0}</b></div><div><small>커밋</small><b>${r?r.commits.length:0}</b></div>
+  <div style="flex-basis:100%"><small>내 사이트 주소</small>${r&&r.pages.branch?`<span class="u">${esc(siteUrl())}</span>`:'<span style="color:#59636e;font-size:14px">Pages 설정 전</span>'}</div></div>
+ <div class="chk">${L.map((x,i)=>`<div class="it"><span class="mk ${x[2]?"y":""}">${i+1}</span><div style="min-width:0"><div class="t">${x[0]}</div><div class="d">${x[1]}</div></div><span class="chip ${x[2]?"y":x[3]?"opt":"n"}">${x[2]?"완료":x[3]?"선택":"미완"}</span></div>`).join("")}</div>
+ <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="kbtn" data-act="view:sim">연습으로 돌아가기</button></div>
+ ${done===req.length?'<div class="notes" style="border-color:#4ac26b66;background:#f3fbf5"><span style="font-size:15px;font-weight:700">모든 필수 항목 완료. 이제 실제 github.com에서 같은 순서로 배포</span></div>':""}
+ </div>`}
+
+/* ---------------- render ---------------- */
+function addr(){const u=esc(U()),r=esc(R());const m={landing:"<b>github.com</b>",login:"github.com/<b>login</b>",verify:"github.com/sessions/<b>verified-device</b>",dashboard:"<b>github.com</b>",new:"github.com/<b>new</b>",repo:`github.com/${u}/<b>${r}</b>`,upload:`github.com/${u}/${r}/<b>upload/main</b>`,settings:`github.com/${u}/${r}/<b>settings</b>`,pages:`github.com/${u}/${r}/<b>settings/pages</b>`,actions:`github.com/${u}/${r}/<b>actions</b>`,run:`github.com/${u}/${r}/actions/runs/<b>${S.runId}</b>`,site:`<b>${esc(siteUrl().replace("https://",""))}</b>`};
+ return `<svg width="12" height="12" viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="7" rx="1.2" fill="#59636e"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" stroke="#59636e" stroke-width="1.6" fill="none"/></svg><span style="overflow:hidden;text-overflow:ellipsis">${m[S.screen]||""}</span>`}
+function render(){
+ const v=S.view||"sim";["intro","sim","app","check"].forEach(k=>$("#pb-"+k).classList.toggle("on",k===v));
+ $("#intro").hidden=v!=="intro";$("#checkv").hidden=v!=="check";$("#chrome").hidden=v!=="sim";$("#sim").hidden=v!=="sim";$("#appv").hidden=v!=="app";$("#coach").hidden=v!=="sim"&&v!=="app";
+ document.querySelectorAll(".coach-tag").forEach(e=>e.remove());
+ if(v==="intro"){$("#intro").innerHTML=introHTML();save();return}
+ if(v==="check"){$("#checkv").innerHTML=checkHTML();save();return}
+ if(v==="app"){$("#appv").innerHTML=appHTML();bindApp();annotate($("#appv"));renderCoach();sig=signature();save();return}
+ $("#sim").innerHTML=V[S.screen]();$("#addr").innerHTML=addr();$("#nav-back").disabled=!S.hist.length;
+ if(S.screen==="site"){const f=$("#site-frame");if(f)f.srcdoc=resolveSite();if(!S.visited&&f){S.visited=true;toast("배포 완료. 내 웹앱 접속 성공")}}
+ bindScreen();annotate($("#sim"));renderCoach();sig=signature();save();
+}
+function bindScreen(){
+ const lf=$("#f-login");if(lf)lf.addEventListener("submit",e=>{e.preventDefault();const v=$("#lg-user").value.trim();const er=$("#lg-err");
+  if(!v){er.hidden=false;er.textContent="Username을 입력하세요 (연습용 아이디 아무거나)";return}
+  if(!/^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/.test(v)){er.hidden=false;er.textContent="Username may only contain alphanumeric characters or single hyphens";return}
+  const pin=$("#lg-pin").value.trim();if(!/^\d{4,8}$/.test(pin)){er.hidden=false;er.textContent="나만 아는 번호: 숫자 4~8자리";return}
+  const saved=load(v,pin);if(saved){S=saved;S.view="sim";S.screen=S.loggedIn?(S.repo?"repo":"dashboard"):"verify";S.hist=[];S.menu=null;S.flash=null;render();toast("이어 하기");return}
+  S.user=v;S.pin=pin;S.screen="verify";S.hist=[];render()});
+ const sf=$("#f-signup");if(sf)sf.addEventListener("submit",e=>{e.preventDefault();signupInfo()});
+ const nn=$("#nr-name");if(nn){nn.addEventListener("input",()=>{S.newForm.name=nn.value;$("#nr-msg").innerHTML=nameMsg(nn.value);$("#nr-create").disabled=!normName(nn.value);renderCoach()});
+  $("#nr-desc").addEventListener("input",e=>S.newForm.desc=e.target.value);
+  document.querySelectorAll('input[name="vis"]').forEach(x=>x.addEventListener("change",()=>{S.newForm.vis=x.value;$("#nr-vtext").textContent=x.value;renderCoach()}));
+  $("#nr-readme").addEventListener("change",e=>S.newForm.readme=e.target.checked)}
+ const dz=$("#drop");if(dz){["dragenter","dragover"].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.add("over")}));dz.addEventListener("dragleave",()=>dz.classList.remove("over"));dz.addEventListener("drop",e=>{e.preventDefault();dz.classList.remove("over");addFiles(e.dataTransfer.files)})}
+}
+/* 페이지 어디에 떨어뜨려도 업로드 화면이면 받기 */
+addEventListener("dragover",e=>{if(S.screen==="upload")e.preventDefault()});addEventListener("drop",e=>{if(S.screen==="upload"&&!e.target.closest("#drop")){e.preventDefault();addFiles(e.dataTransfer.files)}});
+$("#picker").addEventListener("change",e=>{addFiles(e.target.files);e.target.value=""});
+function addFiles(list){const arr=[...(list||[])];if(!arr.length)return;let n=0;
+ arr.forEach(f=>{const rd=new FileReader();const isText=/\.(html?|css|js|json|txt|md|svg|csv)$/i.test(f.name)||/^text\//.test(f.type);
+  rd.onload=()=>{const o={name:f.name,size:f.size};if(isText)o.content=rd.result;else o.dataUrl=rd.result;S.pending=S.pending.filter(p=>p.name!==f.name);S.pending.push(o);if(++n===arr.length){render();toast(`${arr.length}개 파일 추가`)}};
+  isText?rd.readAsText(f):rd.readAsDataURL(f)})}
+
+/* ---------------- actions ---------------- */
+document.addEventListener("click",e=>{
+ const a=e.target.closest("[data-act]");
+ if(!a){if(S.menu&&!e.target.closest(".menu")){S.menu=null;render()}return}
+ const [k,v]=a.dataset.act.split(/:(.+)/);
+ if(k.startsWith("a-")){appAct(k,v);return}
+ const r=S.repo;
+ switch(k){
+  case "back":back();break;
+  case "vmode":{const m=VMODE===v?"auto":v;setMode(m);toast(m==="pc"?"PC 화면":m==="mob"?"모바일 화면":"기기 화면");break}
+  case "view":S.view=v;S.menu=null;render();window.scrollTo(0,0);break;
+  case "reload":render();toast("새로고침");break;
+  case "home":nav(S.loggedIn?"dashboard":"landing");break;
+  case "menu":S.menu=S.menu===v?null:v;render();break;
+  case "go":
+   if(v==="new"&&r){toast("연습에서는 저장소 1개만 사용");nav("repo");break}
+   if(v==="upload"){S.pending=[]}
+   nav(v);break;
+  case "signup":signupInfo();break;
+  case "pin-help":modal({title:"나만 아는 번호",body:'<p style="margin:0;font-family:var(--f-kr);line-height:1.7">실제 화면의 Password 자리. 연습에서는 비밀번호 대신 숫자 4~8자리를 정해 이어 하기 열쇠로 사용. 실제 GitHub 비밀번호, 학번, 전화번호는 넣지 않기</p>',ok:"확인",onOk:()=>{}});break;
+  case "passkey":toast("패스키: 휴대폰 지문·얼굴 인식으로 로그인하는 방식");break;
+  case "sso":ssoModal(v);break;
+  case "sso-go":{const u=($("#sso-user")||{}).value||"";const pin=($("#sso-pin")||{}).value||"";const er=$("#sso-err");
+   if(!/^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/.test(u.trim())){er.hidden=false;er.textContent="아이디: 영문·숫자·하이픈";return}
+   if(!/^\d{4,8}$/.test(pin.trim())){er.hidden=false;er.textContent="나만 아는 번호: 숫자 4~8자리";return}
+   closeModal();const saved=load(u.trim(),pin.trim());
+   if(saved){S=saved;S.view="sim";S.screen=S.repo?"repo":"dashboard";S.loggedIn=true;S.hist=[];render();toast("이어 하기");break}
+   S.user=u.trim();S.pin=pin.trim();S.loggedIn=true;S.hist=[];nav("dashboard",{noPush:true});toast(`${v} 계정 연결 · 로그인 완료`);break}
+  case "verify":S.loggedIn=true;S.hist=[];nav("dashboard",{noPush:true});toast("로그인 완료");break;
+  case "signout":S.loggedIn=false;S.hist=[];nav("landing",{noPush:true});break;
+  case "suggest":S.newForm.name=SUGG;render();break;
+  case "create":{const d=S.newForm;const nm=normName(d.name);if(!nm)return;
+   S.repo={name:nm,desc:d.desc.trim(),vis:d.vis,files:[],commits:[],runs:[],pages:{branch:null,folder:"/"}};
+   if(d.readme){const t=Date.now();S.repo.files.push({name:"README.md",size:30,content:`# ${nm}`,commit:"Initial commit",time:t});S.repo.commits.unshift({msg:"Initial commit",time:t})}
+   S.newForm=null;S.draft={branch:null,folder:"/",source:"branch"};S.hist=["dashboard"];nav("repo",{noPush:true});toast("저장소 생성");break}
+  case "tab":
+   if(v==="code")nav("repo");else if(v==="actions")nav("actions");else if(v==="settings")nav("settings");else toast("연습에서는 Code · Actions · Settings만 사용");break;
+  case "nofeature":toast("연습에서는 파일 업로드만 사용");S.menu=null;render();break;
+  case "pick":S.fd={folder:"다운로드",sel:[]};fileDialog();renderCoach();break;
+  case "fd-folder":S.fd.folder=v;S.fd.sel=[];fileDialog();renderCoach();break;
+  case "fd-sel":{const i=S.fd.sel.indexOf(v);i<0?S.fd.sel.push(v):S.fd.sel.splice(i,1);fileDialog();renderCoach();break}
+  case "fd-open":fdOpen();break;
+  case "fd-real":closeModal();S.fd=null;$("#picker").click();break;
+  case "fd-close":closeModal();S.fd=null;renderCoach();break;
+  case "sample":S.pending=S.pending.filter(p=>p.name!=="index.html");S.pending.push({name:"index.html",size:new Blob([SAMPLE]).size,content:SAMPLE});render();toast("index.html 추가");break;
+  case "sample-bad":S.pending.push({name:"index (1).html",size:new Blob([SAMPLE]).size,content:SAMPLE});render();toast("index (1).html 추가");break;
+  case "unpend":S.pending.splice(+v,1);render();break;
+  case "commit":{if(!S.pending.length)return;const msg=($("#cm-msg").value.trim())||"Add files via upload";const t=Date.now();const pend=S.pending.slice();
+   const pr=document.createElement("div");pr.className="processing";pr.innerHTML='<div><span class="st run"></span>Processing your files…</div>';document.body.appendChild(pr);
+   setTimeout(()=>{pr.remove();pend.forEach(p=>{r.files=r.files.filter(f=>f.name!==p.name);r.files.push({...p,commit:msg,time:t})});r.commits.unshift({msg,time:t});S.pending=[];
+    let fl=null;if(pagesOn()&&r.vis==="public"){newRun(msg);fl="Pages 재배포 시작. 1~2분 뒤 사이트에 반영"}
+    nav("repo",{flash:fl});toast("업로드 완료")},900);break}
+  case "set":nav(v==="pages"?"pages":"settings");if(v==="pages"){S.draft={branch:r.pages.branch,folder:r.pages.folder,source:"branch"};render()}break;
+  case "rename":{const nm=normName($("#st-name").value);if(!nm){toast("이름을 입력하세요");return}r.name=nm;nav("settings",{noPush:true,flash:"Repository name updated."});break}
+  case "vis":modal({title:"Change repository visibility",body:`<p style="margin:0">Make this repository <b>${r.vis==="public"?"private":"public"}</b>?</p>${r.vis==="public"?'<div class="flash warn" style="margin:0;font-size:13px">무료 계정에서 Private로 바꾸면 Pages 사이트가 내려감</div>':""}`,ok:`Make ${r.vis==="public"?"private":"public"}`,danger:true,onOk:()=>{r.vis=r.vis==="public"?"private":"public";nav("settings",{noPush:true,flash:`Your repository is now ${r.vis}.`})}});break;
+  case "del":toast("연습에서는 삭제 대신 오른쪽 아래 '처음부터' 사용");break;
+  case "source":S.draft.source=v;S.menu=null;if(v==="actions"){S.draft.source="branch";toast("연습에서는 Deploy from a branch 사용")}render();break;
+  case "branch":S.draft.branch=v==="main"?"main":null;S.menu=null;render();break;
+  case "folder":S.draft.folder=v;S.menu=null;render();break;
+  case "save-pages":{r.pages.branch=S.draft.branch;r.pages.folder=S.draft.folder;
+   if(r.pages.branch){newRun("pages build and deployment");S.flash="GitHub Pages source saved."}else S.flash="GitHub Pages disabled.";render();toast(r.pages.branch?"저장. 배포 시작":"Pages 끔");break}
+  case "run":S.runId=+v;nav("run");break;
+  case "visit":nav("site");break;
+  /* coach */
+  case "c-min":OPT.coachMin=!OPT.coachMin;renderCoach();break;
+  case "c-list":OPT.coachList=!OPT.coachList;OPT.coachMin=false;renderCoach();break;
+  case "c-hint":OPT.hints=!OPT.hints;renderCoach();break;
+  case "c-speed":OPT.speed=OPT.speed==="fast"?"real":"fast";renderCoach();toast(OPT.speed==="fast"?"빠른 배포 (약 8초)":"실제 속도 (약 1분)");break;
+  case "c-reset":modal({title:"초기화",body:'<p style="margin:0;font-family:var(--f-kr)">이 브라우저에 저장된 연습 기록 삭제 후 처음 화면으로 이동. 공용 PC에서는 마친 뒤 꼭 초기화</p>',ok:"초기화",danger:true,onOk:()=>{wipe();S=fresh();render();toast("초기화 완료")}});break;
+  case "m-close":closeModal();break;
+  case "m-ok":{const f=modalOk;closeModal();f&&f();break}
+ }
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if($("#layer").innerHTML)closeModal();else if(S.menu){S.menu=null;render()}}
+ if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-act]:not(button)")){e.preventDefault();e.target.click()}});
+let modalOk=null;
+function modal({title,body,ok,danger,onOk}){modalOk=onOk;clearTags();$("#layer").innerHTML=`<div class="scrim"><div class="modal"><div class="mh">${title}</div><div class="mb">${body}</div><div class="mf"><button class="btn" data-act="m-close">Cancel</button><button class="btn ${danger?"danger":"green"}" data-act="m-ok">${ok}</button></div></div></div>`}
+function clearTags(){document.querySelectorAll(".coach-tag").forEach(e=>e.remove());document.querySelectorAll(".coach-hot").forEach(e=>e.classList.remove("coach-hot"))}
+function closeModal(){setTimeout(()=>{if(S.view==="sim"||S.view==="app")placeHot(S.view==="app"?appHint():hint())},0);$("#layer").innerHTML="";modalOk=null;S.fd=null;if(S.app){S.app.explorer=false;S.app.pub=null}}
+function signupInfo(){modal({title:"계정 만들기",body:'<div style="font-family:var(--f-kr);line-height:1.7;display:flex;flex-direction:column;gap:8px"><p style="margin:0">실제 가입 순서</p><ol style="margin:0;padding-left:20px"><li>github.com 접속 → 이메일 입력 → 가입</li><li>비밀번호, 아이디(Username) 정하기</li><li>퍼즐 인증 후 이메일로 온 코드 입력</li></ol><p style="margin:0;color:#59636e;font-size:13px">연습에서는 Sign in 화면에서 아이디와 나만 아는 번호만 정하면 바로 시작</p></div>',ok:"Sign in으로",onOk:()=>nav("login")})}
+function ssoModal(v){modalOk=null;clearTags();$("#layer").innerHTML=`<div class="scrim"><div class="modal"><div class="mh">Continue with ${v} <span class="pill" style="font-family:var(--f-kr)">연습용</span></div>
+ <div class="mb" style="font-family:var(--f-kr)"><p style="margin:0;line-height:1.7">실제 화면에서는 ${v} 계정 선택 창이 열리고, 처음이면 GitHub 아이디를 정하는 단계가 이어짐. 연습에서는 계정 정보 없이 아이디와 번호만 정함</p>
+ <div><label class="lbl" for="sso-user">Username</label><input class="in" id="sso-user" value="${esc(S.user)}" spellcheck="false" autocapitalize="off"></div>
+ <div><label class="lbl" for="sso-pin">나만 아는 번호</label><input class="in num" id="sso-pin" inputmode="numeric" maxlength="8" placeholder="숫자 4~8자리"></div><div class="err" id="sso-err" hidden></div></div>
+ <div class="mf"><button class="btn" data-act="m-close">Cancel</button><button class="btn green" data-act="sso-go:${v}">Continue</button></div></div></div>`}
+$("#layer").addEventListener("click",e=>{if(e.target.classList.contains("scrim")){e.stopPropagation();closeModal()}},true);
+
+/* ---------------- coach ---------------- */
+const MISSIONS=["로그인","저장소 만들기 (Public)","index.html 업로드","Pages 설정 (main 저장)","배포 완료 확인","내 사이트 접속"];
+function progress(){const r=S.repo;let n=0;if(S.loggedIn)n=1;if(n===1&&r)n=2;if(n===2&&r.files.some(f=>f.name!=="README.md"))n=3;if(n===3&&pagesOn())n=4;if(n===4&&liveRun()&&!activeRun())n=5;if(n===5&&S.visited)n=6;return n}
+function hint(){const r=S.repo,sc=S.screen,m=S.menu;
+ if(!S.loggedIn){if(sc==="landing")return {k:"land-signin",t:"오른쪽 위 Sign in 클릭",s:"계정이 없으면 이메일 입력 후 가입 (연습에서는 바로 Sign in)",tag:"클릭"};
+  if(sc==="verify")return {k:"verify-btn",t:"Verify 클릭",s:"새 기기에서 로그인하면 메일로 6자리 코드가 옴",tag:"클릭"};
+  return {k:$("#lg-user")&&$("#lg-user").value.trim()?"login-btn":"login-user",t:"Username 입력 후 Sign in",s:"연습용 아이디 아무거나 (영문·숫자·하이픈)",tag:"입력"}}
+ if(!r){if(sc==="new"){const d=S.newForm||{};if(!normName(d.name||""))return {k:"nr-name",t:"Repository name 입력",s:"영문 소문자·숫자·하이픈 권장. 주소 끝부분이 됨",tag:"입력"};
+   if(d.vis!=="public")return {k:"nr-vis",t:"Public 선택",s:"무료 계정은 Public 저장소만 Pages 배포 가능",tag:"선택"};
+   return {k:"nr-create",t:"Create repository 클릭",s:"나머지 항목은 그대로",tag:"클릭"}}
+  if(m==="plus")return {k:"new-repo",t:"New repository 클릭",tag:"클릭"};
+  return {k:"plus",t:"오른쪽 위 + 버튼 → New repository",s:"대시보드 왼쪽 New 버튼도 같은 기능",tag:"클릭"}}
+ const userFiles=r.files.filter(f=>f.name!=="README.md");
+ if(!userFiles.length||!hasRootIndex()&&!pagesOn()){
+  if(sc==="upload"){if(S.fd){if(!S.fd.sel.includes("index.html"))return S.fd.folder!=="다운로드"?{k:"",t:"왼쪽 다운로드 폴더 클릭",s:"제미나이에서 내려받은 파일은 다운로드 폴더에 있음"}:{k:"fd-index",t:"index.html 선택",s:"제미나이에서 내려받은 웹앱 파일",tag:"선택"};return {k:"fd-open",t:"열기 클릭",tag:"클릭"}}
+   if(!S.pending.length)return {k:"pick",t:"choose your files 클릭",s:"파일 선택 창에서 다운로드 폴더의 index.html 고르기. 파일을 점선 영역으로 끌어와도 됨",tag:"클릭"};
+   if(!S.pending.some(p=>p.name==="index.html"))return {k:"pick",t:"index.html 파일 필요",s:"첫 화면이 될 파일은 이름이 꼭 index.html. × 로 지우고 index.html 다시 선택",tag:"다시 선택"};
+   return {k:"commit",t:"Commit changes 클릭",s:"이 버튼을 눌러야 실제로 올라감",tag:"클릭"}}
+  if(sc==="repo"){if(!r.files.length)return {k:"upload-link",t:"uploading an existing file 클릭",s:"Quick setup 상자 안 파란 링크",tag:"클릭"};
+   if(m==="addfile")return {k:"upload-files",t:"Upload files 클릭",tag:"클릭"};return {k:"addfile",t:"Add file → Upload files",s:userFiles.length?"index.html 이름으로 다시 올리기":"",tag:"클릭"}}
+  return {k:"tab-code",t:"Code 탭으로 이동",tag:"클릭"}}
+ if(r.vis!=="public"){if(sc==="settings")return {k:"vis-btn",t:"Change visibility → Public",s:"무료 계정은 Private 저장소에 Pages 사용 불가",tag:"클릭"};return {k:"tab-settings",t:"Settings → 저장소를 Public으로",s:"Pages는 Public 저장소에서만 무료",tag:"클릭"}}
+ if(!pagesOn()){if(sc==="pages"){if(m==="branch")return {k:"branch-main",t:"main 선택",tag:"클릭"};
+   if(S.draft.branch!=="main")return {k:"branch",t:"Branch의 None → main",s:"Source는 Deploy from a branch 그대로",tag:"클릭"};
+   if(S.draft.folder!=="/")return {k:"branch",t:"폴더는 / (root)",s:"/docs로 두면 404",tag:"확인"};
+   return {k:"save",t:"Save 클릭",s:"저장하면 배포 시작",tag:"클릭"}}
+  if(sc==="settings")return {k:"snav-pages",t:"왼쪽 메뉴 Pages 클릭",s:"Code and automation 묶음 아래쪽",tag:"클릭"};
+  return {k:"tab-settings",t:"Settings 탭 클릭",s:"저장소 탭 줄 맨 오른쪽",tag:"클릭"}}
+ const ar=activeRun();
+ if(ar){if(sc==="actions")return {k:"run-row",t:"배포 진행 중",s:"노란 원 → 초록 체크로 바뀌면 완료. 눌러서 상세 보기",tag:"진행 중"};
+  if(sc==="run")return {k:"",t:"build → deploy 순서로 진행",s:"deploy가 끝나면 주소 링크 표시"};
+  return {k:"tab-actions",t:"위쪽 Actions 탭 클릭",s:"Actions = 자동 작업 기록. 방금 Save로 배포 작업이 시작됨. "+(OPT.speed==="fast"?"연습 속도 약 8초":"실제로는 보통 1~2분"),tag:"클릭"}}
+ if(!S.visited||sc!=="site"){
+  if(sc==="pages")return {k:"visit",t:"Visit site 클릭",s:"Your site is live at 아래가 내 웹앱 주소",tag:"클릭"};
+  if(sc==="run")return {k:"run-url",t:"deploy 아래 주소 클릭",s:"초록 체크 = 배포 완료. 이 주소가 내 사이트",tag:"클릭"};
+  if(sc==="actions")return {k:"run-row",t:"초록 체크 = 배포 완료",s:"줄을 눌러 deploy 아래 사이트 주소 확인",tag:"클릭"};
+  if(sc==="settings")return {k:"snav-pages",t:"Pages에서 주소 확인",tag:"클릭"};
+  if(sc==="site")return {k:"",t:"404 화면",s:"아래 원인 확인 후 저장소로 돌아가 수정"};
+  return {k:"tab-settings",t:"Settings → Pages에서 주소 확인",s:"Actions 실행 상세의 deploy 링크도 가능",tag:"클릭"}}
+ return {k:"",t:"배포 완료",s:"수정 배포 연습: Code → Add file → Upload files → 같은 이름 index.html → Commit changes"};
+}
+function renderCoach(){
+ const isApp=S.view==="app",MS=isApp?appMissions():MISSIONS,n=isApp?appProgress():progress(),h=isApp?appHint():hint();
+ $("#coach").className="coach"+(OPT.coachMin?" min":"");
+ $("#coach").innerHTML=`<div class="coach-h"><b>${isApp?"앱 배포 미션":"배포 미션"}</b><span class="p num">${n} / ${MS.length}</span><span class="cbx"><button data-act="c-list">${OPT.coachList?"목록 닫기":"전체 단계"}</button><button data-act="c-min">${OPT.coachMin?"펼치기":"접기"}</button></span></div>
+ <div class="cprog"><i style="width:${n/MS.length*100}%"></i></div>
+ <div class="coach-b"><div class="hintbox">${esc(h.t)}${h.s?`<small>${esc(h.s)}</small>`:""}</div>
+ ${OPT.coachList?`<ul class="mis">${MS.map((m,i)=>`<li class="${i<n?"done":i===n?"cur":""}"><i>${i<n?"✓":i+1}</i>${m}</li>`).join("")}</ul>
+ <div class="ctl"><button class="cbtn ${OPT.hints?"on":""}" data-act="c-hint">말풍선</button><button class="cbtn" data-act="c-speed">${OPT.speed==="fast"?"빠른 배포":"실제 속도"}</button><button class="cbtn" data-act="view:check">점검</button></div>`:""}</div>`;
+ placeHot(h);
+}
+function placeHot(h){document.querySelectorAll(".coach-hot").forEach(e=>e.classList.remove("coach-hot"));document.querySelectorAll(".coach-tag").forEach(e=>e.remove());
+ if(!OPT.hints||!h.k)return;const el=document.querySelector(`[data-coach="${h.k}"]`);if(!el)return;if($("#layer .scrim")&&!el.closest(".scrim"))return;el.classList.add("coach-hot");
+ const co=$("#coach");if(co&&!co.hidden&&!el.closest(".scrim")){const hit=()=>{const a=el.getBoundingClientRect(),c=co.getBoundingClientRect();return a.bottom+70>c.top&&a.top<c.bottom&&a.right>c.left-8&&a.left<c.right+8};
+  if(hit()){el.scrollIntoView({block:"center"});if(hit())co.classList.add("min")}}
+ const rt=el.closest(".rtabs");if(rt){const er=el.getBoundingClientRect(),rr=rt.getBoundingClientRect();if(er.right>rr.right||er.left<rr.left)rt.scrollLeft+=er.left-rr.left-40}
+ if(!h.tag)return;requestAnimationFrame(()=>{let r=el.getBoundingClientRect();if(!r.width)return;
+  const en=enText(el),ko=en&&GLOSS[en];const t=document.createElement("div");t.className="bubble coach-tag";
+  t.innerHTML=`<div class="l1"><span class="act">${esc(h.tag)}</span>${ko?`<span class="en">${esc(en)}</span><span>= ${esc(ko)}</span>`:`<span>${esc(h.t)}</span>`}</div>${h.s?`<div class="l2">${esc(h.s)}</div>`:""}`;
+  document.body.appendChild(t);const vw=document.documentElement.clientWidth;
+  const isIn=/INPUT|TEXTAREA/.test(el.tagName),box=el.closest(".menu")||(isIn?el:null);
+  if(box){const br=box.getBoundingClientRect(),w=t.offsetWidth,hh=t.offsetHeight,cy=r.top+r.height/2;let side=null,left;
+   const L=br.left>w+20,Rr=vw-br.right>w+20;
+   if(isIn&&Rr){left=br.right+scrollX+12;side="rt"}else if(L){left=br.left+scrollX-w-12;side="lf"}else if(Rr){left=br.right+scrollX+12;side="rt"}
+   if(side){const top=Math.max(scrollY+8,cy+scrollY-hh/2);t.classList.add(side);t.style.top=top+"px";t.style.left=left+"px";t.style.setProperty("--ay",(cy+scrollY-top)+"px");return}
+   r=br}
+  let top=r.bottom+scrollY+10,left=r.left+scrollX+r.width/2-t.offsetWidth/2;left=Math.max(8,Math.min(left,vw-t.offsetWidth-8));
+  if(r.bottom+t.offsetHeight+20>innerHeight&&r.top>t.offsetHeight+20){top=r.top+scrollY-t.offsetHeight-10;t.classList.add("up")}
+  t.style.top=top+"px";t.style.left=left+"px";t.style.setProperty("--ax",Math.max(14,Math.min(t.offsetWidth-14,r.left+scrollX+r.width/2-left))+"px")})}
+function enText(el){return (el.dataset.en||el.textContent||"").replace(/\s+/g," ").trim().replace(/\s*\d+$/,"").replace(/…$/,"")}
+const GLOSS={"Sign in":"로그인","Sign up":"가입","Create an account":"계정 만들기","Continue with Google":"구글 계정으로 로그인","Continue with Apple":"애플 계정으로 로그인","Sign in with a passkey":"패스키(지문·얼굴)로 로그인","Verify":"확인(기기 인증)","Device verification":"기기 인증",
+ "New repository":"새 저장소 만들기","New":"새로 만들기","Create repository":"저장소 만들기","Repository name":"저장소 이름","Description":"설명","Public":"공개","Private":"비공개","Add a README file":"소개 파일(README) 추가","Top repositories":"내 저장소","Dashboard":"내 홈",
+ "Code":"코드(파일 목록)","Issues":"이슈(의견·문제)","Pull requests":"변경 제안","Actions":"자동 작업 기록(배포 진행)","Insights":"통계","Settings":"설정",
+ "uploading an existing file":"기존 파일 올리기","creating a new file":"새 파일 만들기","choose your files":"파일 선택","Add file":"파일 추가","Upload files":"파일 올리기","Commit changes":"변경 사항 확정(올리기)","Cancel":"취소","About":"소개","Deployments":"배포 기록","Releases":"배포판","Languages":"사용 언어",
+ "General":"일반","Pages":"웹사이트 배포","Source":"배포 방식","Branch":"브랜치(작업 줄기)","main":"기본 브랜치","None":"없음(꺼짐)","Save":"저장","Visit site":"사이트 열기","Custom domain":"개인 도메인","Enforce HTTPS":"보안 연결 사용","Change visibility":"공개 범위 바꾸기","Delete this repository":"저장소 삭제","Rename":"이름 바꾸기","Danger Zone":"위험 구역(되돌리기 어려운 설정)","Build and deployment":"사이트 만들기와 배포","Deploy from a branch":"브랜치에서 배포","GitHub Pages":"웹사이트 무료 배포 기능",
+ "All workflows":"모든 자동 작업","pages build and deployment":"Pages 사이트 만들기와 배포","build":"사이트 만들기","deploy":"인터넷에 올리기","New workflow":"새 자동 작업",
+ "Changes":"변경 사항","History":"기록","Commit to main":"main에 기록(커밋)","Publish repository":"저장소 게시(웹에 올리기)","Push origin":"새 기록 올리기","Fetch origin":"새로 받기","Show in Explorer":"파일 탐색기에서 열기","View on GitHub":"웹에서 보기","Keep this code private":"비공개로 유지","Finish":"완료","Authorize desktop":"앱 사용 허락","Sign in to GitHub.com":"GitHub.com 로그인","Configure Git":"Git 설정(이름·이메일)","Welcome to Desktop":"앱 첫 화면","Let's get started!":"시작하기","Create a New Repository on your hard drive":"내 컴퓨터에 새 저장소 만들기","Repository":"저장소 메뉴","No local changes":"바뀐 파일 없음"};
+function annotate(root){if(!root)return;root.querySelectorAll("button,a,.rtab,.lbl,.it,.sel,.h1,.h2,.h3,b,.mi,.job .t,.sec b,h1").forEach(el=>{const t=enText(el);if(GLOSS[t])el.dataset.ko=GLOSS[t]})}
+let tipEl=null;
+document.addEventListener("mouseover",e=>{const el=e.target.closest&&e.target.closest("[data-ko]");if(!el||!matchMedia("(hover:hover)").matches){if(tipEl){tipEl.remove();tipEl=null}return}
+ if(!tipEl){tipEl=document.createElement("div");tipEl.className="ko-tip";document.body.appendChild(tipEl)}tipEl.textContent=el.dataset.ko;const r=el.getBoundingClientRect();
+ tipEl.style.left=Math.max(6,Math.min(r.left+r.width/2-tipEl.offsetWidth/2,innerWidth-tipEl.offsetWidth-6))+"px";tipEl.style.top=(r.top>34?r.top-tipEl.offsetHeight-6:r.bottom+6)+"px"});
+addEventListener("scroll",()=>{if(tipEl){tipEl.remove();tipEl=null}},true);
+addEventListener("resize",()=>placeHot(S.view==="app"?appHint():hint()));
+$("#a-picker").addEventListener("change",e=>{readInto(e.target.files,false);e.target.value=""});
+addEventListener("input",e=>{if(e.target.id==="lg-user")placeHot(hint())});
+
+/* ================= desktop app (연습용) ================= */
+function A(){if(!S.app)S.app={stage:"welcome",signed:false,git:null,name:"",desc:"",readme:false,files:{},work:{},commits:[],sel:null,tab:"changes",published:false,ahead:0,pub:null,explorer:false,dl:[],summary:"",cdesc:"",unchecked:{}};return S.app}
+const WINPATH=()=>`C:\\Users\\${U()}\\Documents\\GitHub`;
+function changes(){const a=A();return Object.keys(a.work).filter(n=>!a.files[n]||a.files[n].content!==a.work[n].content||a.files[n].dataUrl!==a.work[n].dataUrl).sort()}
+function appMissions(){return ["앱 로그인","Git 설정","로컬 저장소 만들기","index.html 복사","커밋 (Commit to main)","Publish (Public)","Pages 설정 (웹)","사이트 접속"]}
+function appProgress(){const a=A();let n=0;if(a.signed)n=1;if(n===1&&a.git)n=2;if(n===2&&a.stage==="main")n=3;if(n===3&&a.work["index.html"])n=4;if(n===4&&a.files["index.html"])n=5;if(n===5&&a.published&&S.repo&&S.repo.vis==="public")n=6;if(n===6&&pagesOn())n=7;if(n===7&&S.visited)n=8;return n}
+function appHint(){const a=A();
+ if(a.stage==="welcome")return {k:"a-signin",t:"Sign in to GitHub.com 클릭",s:"실제로는 웹 브라우저가 열리고 승인 화면이 나옴",tag:"클릭"};
+ if(a.stage==="signin")return {k:S.loggedIn?"a-authorize":"a-user",t:S.loggedIn?"Authorize 클릭":"아이디·번호 입력 후 Authorize",s:"앱이 내 계정을 쓰도록 허락하는 단계",tag:S.loggedIn?"클릭":"입력"};
+ if(a.stage==="config")return {k:"a-finish",t:"Configure Git: Finish 클릭",s:"커밋에 남는 이름과 이메일. 그대로 두어도 됨",tag:"클릭"};
+ if(a.stage==="start")return {k:"a-new",t:"Create a New Repository on your hard drive",s:"내 컴퓨터에 저장소 폴더 만들기",tag:"클릭"};
+ if(a.stage==="create")return normName(a.name)?{k:"a-create",t:"Create repository 클릭",s:"Local path: 문서 › GitHub 폴더 안에 생김",tag:"클릭"}:{k:"a-name",t:"Name 입력",s:"영문 소문자·숫자·하이픈. 주소 끝부분이 됨",tag:"입력"};
+ if(a.pub){if(a.pub.priv)return {k:"a-private",t:"Keep this code private 체크 해제",s:"체크된 채로 올리면 Private 저장소 → Pages 사용 불가",tag:"해제"};return {k:"a-pub-go",t:"Publish repository 클릭",tag:"클릭"}}
+ if(a.explorer)return {k:"a-copy",t:"index.html을 저장소 폴더로 복사",s:"끌어다 놓거나 복사 버튼",tag:"복사"};
+ const ch=changes();
+ if(!a.work["index.html"])return {k:"a-explorer",t:"Show in Explorer로 저장소 폴더 열기",s:"내려받은 index.html을 이 폴더에 넣으면 앱이 변경 사항으로 인식",tag:"클릭"};
+ if(ch.length){if(a.tab!=="changes")return {k:"a-tab-changes",t:"Changes 탭",tag:"클릭"};if(!a.summary.trim())return {k:"a-summary",t:"Summary 입력",s:"무엇을 바꿨는지 짧게. 예: 퀴즈 앱 올리기",tag:"입력"};return {k:"a-commit",t:"Commit to main 클릭",s:"내 컴퓨터 저장소에 기록. 아직 인터넷에는 안 올라감",tag:"클릭"}}
+ if(!a.published)return {k:"a-publish",t:"Publish repository 클릭",s:"GitHub.com에 저장소 만들고 올리기",tag:"클릭"};
+ if(a.ahead>0)return {k:"a-push",t:"Push origin 클릭",s:"새 커밋을 GitHub.com으로 올리기",tag:"클릭"};
+ if(S.repo&&S.repo.vis!=="public")return {k:"a-viewgh",t:"View on GitHub → Settings에서 Public으로",s:"Private 저장소는 무료 계정에서 Pages 사용 불가",tag:"클릭"};
+ if(!pagesOn())return {k:"a-viewgh",t:"View on GitHub → Settings → Pages",s:"Pages 설정은 웹에서만 가능",tag:"클릭"};
+ if(!liveRun())return {k:"a-viewgh",t:"웹 Actions 탭에서 배포 확인",tag:"클릭"};
+ if(!S.visited)return {k:"a-viewgh",t:"View on GitHub → 사이트 주소 접속",tag:"클릭"};
+ return {k:"",t:"완료",s:"수정 배포: index.html 다시 복사 → Commit to main → Push origin"};
+}
+const AICO={
+ repo:'<svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 2.5h8.5a1 1 0 0 1 1 1V12H4a1 1 0 0 0-1 1V2.5zM3 13a1 1 0 0 0 1 1h8.5v-2" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>',
+ branch:'<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="4.5" cy="3.5" r="1.6" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="4.5" cy="12.5" r="1.6" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="11.5" cy="5" r="1.6" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M4.5 5.1v5.8M11.5 6.6c0 3-7 2-7 4.3" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>',
+ up:'<svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 13V3M4 7l4-4 4 4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+ sync:'<svg width="16" height="16" viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v3h-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+ folder:'<svg width="18" height="18" viewBox="0 0 16 16"><path d="M1.75 3.5h4.5l1.5 1.5h6.5v8H1.75z" fill="#e3b341" stroke="#9a6700" stroke-width=".8"/></svg>',
+ html:'<svg width="18" height="18" viewBox="0 0 16 16"><path d="M3.5 1.5h6l3 3v10h-9z" fill="#fff" stroke="#59636e" stroke-width=".9"/><text x="8" y="12" font-size="4.2" text-anchor="middle" fill="#e34c26" font-family="sans-serif" font-weight="700">HTML</text></svg>',
+};
+function appHTML(){const a=A();
+ const title=`<div class="wtitle"><span class="mark" style="width:16px;height:16px;color:#c9d1d9;--dog-bg:#1f2328">${DOG}</span><span class="wname">Desktop <span class="pill" style="color:#c9d1d9;border-color:#57606a;font-family:var(--f-kr)">연습용</span></span>
+  <span class="mn">${a.stage==="main"?`<span>File</span><span>Edit</span><span>View</span><span class="relbox" data-act="a-menu:repo">Repository${S.menu==="a-repo"?`<span class="menu" style="left:0;top:22px;color:var(--fg)"><button class="mi" data-act="a-viewgh">View on GitHub</button><button class="mi" data-act="a-explorer">Show in Explorer</button></span>`:""}</span><span>Branch</span><span>Help</span>`:""}</span>
+  <span class="wctl"><i>–</i><i>□</i><i>×</i></span></div>`;
+ if(a.stage!=="main"&&a.stage!=="create")return `<div class="dwin">${title}<div class="onb">${onbHTML()}</div></div>`;
+ if(a.stage==="create")return `<div class="dwin">${title}<div class="onb">${createHTML()}</div></div>`;
+ const ch=changes(),btn=!a.published?["Publish repository","Publish this repository to GitHub","a-publish",AICO.up]:a.ahead>0?["Push origin",`${a.ahead} commit${a.ahead>1?"s":""} to push`,"a-push",AICO.up]:["Fetch origin","Last fetched just now","a-fetch",AICO.sync];
+ const sel=a.sel&&ch.includes(a.sel)?a.sel:ch[0];a.sel=sel||null;
+ return `<div class="dwin">${title}
+ <div class="tb"><div class="sec" style="width:300px">${AICO.repo}<div style="min-width:0"><small>Current repository</small><b>${esc(a.name)}</b></div>${ico.caret}</div>
+  <div class="sec" style="width:230px">${AICO.branch}<div><small>Current branch</small><b>main</b></div>${ico.caret}</div>
+  <div class="sec go" data-act="${btn[2]}" data-coach="${btn[2]}">${btn[3]}<div style="min-width:0"><b>${btn[0]}</b><small>${btn[1]}</small></div></div></div>
+ <div class="ab"><div class="lp">
+  <div class="lt"><button class="${a.tab==="changes"?"on":""}" data-act="a-tab:changes" data-coach="a-tab-changes">Changes ${ch.length?`<span class="cnt">${ch.length}</span>`:""}</button><button class="${a.tab==="history"?"on":""}" data-act="a-tab:history">History</button></div>
+  ${a.tab==="changes"?`<div class="chg">${ch.length?`<div class="r hd"><input type="checkbox" checked disabled> ${ch.length} changed file${ch.length>1?"s":""}</div>`+ch.map(n=>`<div class="r ${n===sel?"sel":""}" data-act="a-sel:${esc(n)}"><input type="checkbox" checked disabled><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(n)}</span><span class="bd ${a.files[n]?"mod":"add"}">${a.files[n]?"•":"+"}</span></div>`).join(""):""}</div>
+   <div class="cbox"><div style="display:flex;gap:8px;align-items:center"><span class="ava" style="width:24px;height:24px;font-size:11px">${esc(U()[0])}</span><input class="in" id="a-sum" data-coach="a-summary" placeholder="Summary (required)" value="${esc(a.summary)}"></div>
+   <textarea class="in" id="a-desc" placeholder="Description" style="min-height:64px">${esc(a.cdesc)}</textarea>
+   <button class="btn" id="a-commit" style="width:100%;background:#0969da;color:#fff;border-color:#0969da" data-act="a-commit" data-coach="a-commit" ${ch.length&&a.summary.trim()?"":"disabled"}>Commit to <b style="margin-left:4px">main</b></button></div>`
+  :`<div class="chg">${a.commits.length?a.commits.map(c=>`<div class="r" style="flex-direction:column;align-items:flex-start;gap:2px;border-bottom:1px solid var(--line2)"><b style="font-weight:600">${esc(c.msg)}</b><span class="muted" style="font-size:12px">${esc(U())} · ${ago(c.time)}${c.pushed?"":' · <span style="color:#9a6700">not pushed</span>'}</span></div>`).join(""):'<div class="muted" style="padding:16px">No commits yet</div>'}</div>`}
+ </div><div class="rp">${sel&&a.tab==="changes"?diffHTML(sel):blankHTML()}</div></div></div>`;
+}
+function onbHTML(){const a=A();
+ if(a.stage==="welcome")return `<div class="oin"><h1>Welcome to Desktop</h1><p class="muted">Desktop is a seamless way to contribute to projects on GitHub and GitHub Enterprise. Sign in below to get started with your existing projects.</p>
+  <p class="muted" style="font-size:13px">New to GitHub? <a data-act="signup">Create your free account.</a></p>
+  <div class="ostack"><button class="btn" style="background:#0969da;color:#fff;border-color:#0969da" data-act="a-signin" data-coach="a-signin">Sign in to GitHub.com</button><button class="btn" disabled>Sign in to GitHub Enterprise</button></div>
+  <a data-act="a-skip" style="font-size:13px">Skip this step</a></div>`;
+ if(a.stage==="signin")return `<div class="oin"><div class="bwin"><div class="bbar">${ico.lock}<span>github.com/login/oauth/authorize</span><span class="pill" style="font-family:var(--f-kr);margin-left:auto">브라우저 · 연습용</span></div>
+  <div style="padding:24px;display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center">
+   <div style="display:flex;gap:14px;align-items:center"><span class="mark" style="width:44px;height:44px">${DOG}</span><span class="muted">·····</span><span class="ava" style="width:44px;height:44px;font-size:18px">${S.loggedIn?esc(U()[0]):"?"}</span></div>
+   <h2 class="h2" style="font-weight:400">Authorize Desktop</h2>
+   ${S.loggedIn?`<p class="muted" style="margin:0">Desktop by <b>desktop</b> wants to access your <b>${esc(U())}</b> account</p>`:`<div style="width:100%;max-width:300px;display:flex;flex-direction:column;gap:10px;text-align:left"><div><label class="lbl" for="a-user">Username</label><input class="in" id="a-user" data-coach="a-user" spellcheck="false" autocapitalize="off"></div><div><label class="lbl" for="a-pin" style="font-family:var(--f-kr)">나만 아는 번호</label><input class="in num" id="a-pin" inputmode="numeric" maxlength="8" placeholder="숫자 4~8자리"></div><div class="err" id="a-err" hidden></div></div>`}
+   <div style="display:flex;gap:8px"><button class="btn" data-act="a-cancel">Cancel</button><button class="btn green" data-act="a-authorize" data-coach="a-authorize">Authorize desktop</button></div>
+   <p class="note" style="margin:0;font-family:var(--f-kr)">실제로는 웹 브라우저에서 로그인 후 이 화면이 나오고, 승인하면 앱으로 돌아감</p></div></div></div>`;
+ if(a.stage==="config")return `<div class="oin"><h1>Configure Git</h1><p class="muted">This is used to identify the commits you create. Anyone will be able to see this information if you publish commits.</p>
+  <label class="radio"><input type="radio" checked><span>Use my GitHub account name and email address</span></label>
+  <div><label class="lbl" for="a-gname">Name</label><input class="in" id="a-gname" value="${esc(U())}"></div>
+  <div><label class="lbl" for="a-gmail">Email</label><input class="in" id="a-gmail" value="${esc(U().toLowerCase())}@users.noreply.github.com"></div>
+  <div class="ostack" style="flex-direction:row"><button class="btn" style="background:#0969da;color:#fff;border-color:#0969da" data-act="a-finish" data-coach="a-finish">Finish</button><button class="btn" data-act="a-back:signin">Back</button></div></div>`;
+ return `<div class="oin" style="max-width:640px"><h1>Let's get started!</h1><p class="muted">Add a repository to Desktop to start collaborating</p>
+  <div class="startlist"><button disabled>${AICO.repo}<span>Create a tutorial repository…</span></button><button disabled>${AICO.repo}<span>Clone a repository from the Internet…</span></button>
+  <button data-act="a-new" data-coach="a-new">${ico.plus}<span>Create a New Repository on your hard drive…</span></button><button disabled>${AICO.folder}<span>Add an Existing Repository from your hard drive…</span></button></div></div>`;
+}
+function createHTML(){const a=A();const nm=normName(a.name);return `<div class="oin dlg"><div class="dh">Create a new repository<button class="ib" style="border:0;background:none" data-act="a-back:start">${ico.x}</button></div>
+ <div class="db"><div><label class="lbl" for="a-rname">Name</label><input class="in" id="a-rname" data-coach="a-name" value="${esc(a.name)}" spellcheck="false" autocapitalize="off"><div id="a-rmsg">${a.name.trim()&&nm!==a.name.trim()?`<div class="note" style="color:var(--yellow)">Will be created as ${esc(nm)}</div>`:""}</div></div>
+ <div><label class="lbl" for="a-rdesc">Description</label><input class="in" id="a-rdesc" value="${esc(a.desc)}"></div>
+ <div><label class="lbl">Local path</label><div style="display:flex;gap:8px"><input class="in mono" value="${esc(WINPATH())}" readonly style="font-size:12px"><button class="btn">Choose…</button></div></div>
+ <label class="radio" style="padding:0"><input type="checkbox" id="a-readme" ${a.readme?"checked":""}><span>Initialize this repository with a README</span></label>
+ <div><label class="lbl">Git ignore</label><span class="sel">None ${ico.caret}</span></div><div><label class="lbl">License</label><span class="sel">None ${ico.caret}</span></div></div>
+ <div class="df"><button class="btn" style="background:#0969da;color:#fff;border-color:#0969da" id="a-createbtn" data-act="a-create" data-coach="a-create" ${nm?"":"disabled"}>Create repository</button><button class="btn" data-act="a-back:start">Cancel</button></div></div>`}
+function diffHTML(n){const a=A(),f=a.work[n];if(f.dataUrl)return `<div class="dhd mono">${esc(n)}</div><div style="padding:24px;display:grid;place-items:center"><img src="${f.dataUrl}" alt="" style="max-height:320px;border:1px solid var(--line)"></div>`;
+ const lines=(f.content||"").split("\n"),old=a.files[n]?(a.files[n].content||"").split("\n"):null;
+ return `<div class="dhd mono">${esc(n)}</div><div class="diff">${old?`<div class="ln hunk"><i></i><span>@@ 수정된 파일 · 이전 ${old.length}줄 → ${lines.length}줄 @@</span></div>`:""}${lines.slice(0,300).map((l,i)=>`<div class="ln"><i>${i+1}</i><span>+${esc(l)}</span></div>`).join("")}${lines.length>300?`<div class="ln"><i></i><span>… ${lines.length-300} more lines</span></div>`:""}</div>`}
+function blankHTML(){const a=A();return `<div class="blank"><h2 class="h2" style="font-weight:400">No local changes</h2><p class="muted" style="margin:0">There are no uncommitted changes in this repository. Here are some friendly suggestions for what to do next.</p>
+ ${!a.published?`<div class="sug prim"><div><b>Publish your repository to GitHub</b><div class="muted" style="font-size:13px">This repository is currently only available on your local machine. By publishing it on GitHub you can share it, and collaborate with others.</div></div><button class="btn" style="background:#0969da;color:#fff;border-color:#0969da" data-act="a-publish">Publish repository</button></div>`:a.ahead>0?`<div class="sug prim"><div><b>Push commits to the origin remote</b><div class="muted" style="font-size:13px">You have ${a.ahead} local commit${a.ahead>1?"s":""} waiting to be pushed to GitHub.</div></div><button class="btn" style="background:#0969da;color:#fff;border-color:#0969da" data-act="a-push">Push origin</button></div>`:""}
+ <div class="sug"><div><b>View the files of your repository in Explorer</b><div class="muted" style="font-size:13px">Repository menu or Ctrl + Shift + F</div></div><button class="btn" data-act="a-explorer" data-coach="a-explorer">Show in Explorer</button></div>
+ ${a.published?`<div class="sug"><div><b>Open the repository page on GitHub in your browser</b><div class="muted" style="font-size:13px">Repository menu or Ctrl + Shift + G</div></div><button class="btn" data-act="a-viewgh" data-coach="a-viewgh">View on GitHub</button></div>`:""}
+ <div class="sug"><div><b>Open the repository in your external editor</b><div class="muted" style="font-size:13px">Repository menu or Ctrl + Shift + A</div></div><button class="btn" disabled>Open in Visual Studio Code</button></div></div>`}
+function explorerModal(){const a=A();const local=Object.keys(a.work).sort();
+ $("#layer").innerHTML=`<div class="scrim"><div class="xwin"><div class="wtitle" style="background:#f3f3f3;color:#1f2328;border-bottom:1px solid #ddd">${AICO.folder}<b style="font-weight:600">파일 탐색기</b><span class="pill" style="font-family:var(--f-kr)">연습용</span><span class="wctl"><i data-act="a-xclose" style="cursor:pointer;font-size:16px">×</i></span></div>
+ <div class="xgrid"><div class="xp"><div class="xh">${AICO.folder} 다운로드</div>
+   <div class="xl">${a.dl.map((f,i)=>`<div class="xf" draggable="true" data-dl="${i}">${AICO.html}<span>${esc(f.name)}</span><button class="btn sm" data-act="a-copy:${i}" ${f.name==="index.html"?'data-coach="a-copy"':""}>복사 →</button></div>`).join("")}</div>
+   <div style="display:flex;gap:6px;flex-wrap:wrap;padding:8px"><button class="hbtn ghost" data-act="a-pick">내 컴퓨터에서 실제 파일 찾기</button></div></div>
+  <div class="xp" id="xdrop"><div class="xh">${AICO.folder} 문서 › GitHub › <b>${esc(a.name)}</b></div>
+   <div class="xl">${local.length?local.map(n=>`<div class="xf">${AICO.html}<span>${esc(n)}</span></div>`).join(""):'<div class="muted" style="padding:20px;text-align:center;font-family:var(--f-kr)">빈 폴더. 왼쪽 파일을 끌어다 놓기</div>'}</div></div></div>
+ <div class="df" style="font-family:var(--f-kr)"><span class="muted" style="font-size:13px;flex:1">이 폴더에 넣은 파일을 앱이 Changes로 보여 줌</span><button class="btn" data-act="a-xclose">닫기</button></div></div></div>`;
+ document.querySelectorAll(".xf[data-dl]").forEach(el=>el.addEventListener("dragstart",e=>{try{e.dataTransfer.setData("text/plain",el.dataset.dl)}catch(_){}}));
+ const xd=$("#xdrop");xd.addEventListener("dragover",e=>{e.preventDefault();xd.classList.add("over")});xd.addEventListener("dragleave",()=>xd.classList.remove("over"));
+ xd.addEventListener("drop",e=>{e.preventDefault();xd.classList.remove("over");const i=e.dataTransfer.getData("text/plain");if(i!=="")copyDl(+i);else if(e.dataTransfer.files.length)readInto(e.dataTransfer.files,true)});
+ placeHot(appHint());
+}
+function copyDl(i){const a=A(),f=a.dl[i];if(!f)return;a.work[f.name]={name:f.name,size:f.size,content:f.content,dataUrl:f.dataUrl};toast(`${f.name} 복사`);explorerModal();render()}
+function readInto(list,toRepo){const arr=[...list];let n=0;arr.forEach(f=>{const rd=new FileReader();const isText=/\.(html?|css|js|json|txt|md|svg|csv)$/i.test(f.name)||/^text\//.test(f.type);
+ rd.onload=()=>{const o={name:f.name,size:f.size};if(isText)o.content=rd.result;else o.dataUrl=rd.result;const a=A();a.dl=a.dl.filter(x=>x.name!==f.name);a.dl.unshift(o);if(toRepo)a.work[f.name]={...o};
+  if(++n===arr.length){if(a.explorer)explorerModal();render();toast(toRepo?"저장소 폴더에 복사":`${arr.length}개 파일 불러옴`)}};isText?rd.readAsText(f):rd.readAsDataURL(f)})}
+function publishModal(){const a=A();const p=a.pub;
+ $("#layer").innerHTML=`<div class="scrim"><div class="modal"><div class="mh" style="display:flex;justify-content:space-between">Publish repository<button data-act="a-pubclose">${ico.x}</button></div>
+ <div class="mb"><div style="display:flex;gap:16px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600"><span style="border-bottom:2px solid #0969da;padding-bottom:6px">GitHub.com</span><span class="muted">GitHub Enterprise</span></div>
+ <div><label class="lbl" for="pb-name">Name</label><input class="in" id="pb-name" value="${esc(p.name)}"></div>
+ <div><label class="lbl" for="pb-desc">Description</label><input class="in" id="pb-desc" value="${esc(p.desc)}"></div>
+ <label class="radio" data-coach="a-private" style="padding:6px 8px"><input type="checkbox" id="pb-priv" ${p.priv?"checked":""}><span>Keep this code private</span></label>
+ <div><label class="lbl">Organization</label><span class="sel">None ${ico.caret}</span></div>
+ <div class="err" id="pb-err" ${p.err?"":"hidden"}>${esc(p.err||"")}</div></div>
+ <div class="mf"><button class="btn" data-act="a-pubclose">Cancel</button><button class="btn" style="background:#0969da;color:#fff;border-color:#0969da" data-act="a-pub-go" data-coach="a-pub-go">Publish repository</button></div></div></div>`;
+ $("#pb-priv").addEventListener("change",e=>{a.pub.priv=e.target.checked;renderCoach()});
+ $("#pb-name").addEventListener("input",e=>a.pub.name=e.target.value);$("#pb-desc").addEventListener("input",e=>a.pub.desc=e.target.value);
+ placeHot(appHint());
+}
+function bindApp(){const a=A();
+ const n=$("#a-rname");if(n){n.addEventListener("input",()=>{a.name=n.value;const nm=normName(n.value);$("#a-createbtn").disabled=!nm;$("#a-rmsg").innerHTML=n.value.trim()&&nm!==n.value.trim()?`<div class="note" style="color:var(--yellow)">Will be created as ${esc(nm)}</div>`:"";renderCoach()});
+  $("#a-rdesc").addEventListener("input",e=>a.desc=e.target.value);$("#a-readme").addEventListener("change",e=>a.readme=e.target.checked)}
+ const sm=$("#a-sum");if(sm){sm.addEventListener("input",()=>{a.summary=sm.value;$("#a-commit").disabled=!(changes().length&&sm.value.trim());renderCoach()});$("#a-desc").addEventListener("input",e=>a.cdesc=e.target.value)}
+ const au=$("#a-user");if(au)au.addEventListener("input",()=>renderCoach());
+}
+function appAct(k,v){const a=A();
+ switch(k){
+  case "a-menu":S.menu=S.menu==="a-repo"?null:"a-repo";render();break;
+  case "a-signin":a.stage="signin";render();break;
+  case "a-skip":toast("연습에서는 로그인 필요");break;
+  case "a-cancel":a.stage="welcome";render();break;
+  case "a-authorize":{if(!S.loggedIn){const u=($("#a-user").value||"").trim(),p=($("#a-pin").value||"").trim(),er=$("#a-err");
+    if(!/^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/.test(u)){er.hidden=false;er.textContent="아이디: 영문·숫자·하이픈";return}
+    if(!/^\d{4,8}$/.test(p)){er.hidden=false;er.textContent="나만 아는 번호: 숫자 4~8자리";return}
+    S.user=u;S.pin=p;S.loggedIn=true}
+   a.signed=true;a.stage="config";render();toast("앱 로그인 완료");break}
+  case "a-back":a.stage=v;render();break;
+  case "a-finish":a.git={name:$("#a-gname").value,email:$("#a-gmail").value};a.stage="start";render();break;
+  case "a-new":a.stage="create";render();break;
+  case "a-create":{const nm=normName(a.name);if(!nm)return;a.name=nm;a.stage="main";a.files={};a.work={};a.commits=[];
+   if(a.readme){const f={name:"README.md",size:nm.length+2,content:`# ${nm}\n${a.desc||""}`};a.files["README.md"]={...f};a.work["README.md"]={...f};a.commits.push({msg:"Initial commit",time:Date.now(),files:["README.md"],pushed:false})}
+   if(!a.dl.length)a.dl=[{name:"index.html",size:new Blob([SAMPLE]).size,content:SAMPLE}];render();toast("로컬 저장소 생성");break}
+  case "a-tab":a.tab=v;render();break;
+  case "a-sel":a.sel=v;render();break;
+  case "a-commit":{const ch=changes();if(!ch.length||!a.summary.trim())return;ch.forEach(n=>a.files[n]={...a.work[n]});a.commits.unshift({msg:a.summary.trim(),time:Date.now(),files:ch,pushed:false});if(a.published)a.ahead++;a.summary="";a.cdesc="";render();toast(`커밋 완료 · ${ch.length}개 파일`);break}
+  case "a-explorer":S.menu=null;if(!a.dl.length)a.dl=[{name:"index.html",size:new Blob([SAMPLE]).size,content:SAMPLE}];a.explorer=true;explorerModal();renderCoach();break;
+  case "a-xclose":a.explorer=false;closeModal();render();break;
+  case "a-copy":copyDl(+v);break;
+  case "a-pick":$("#a-picker").click();break;
+  case "a-dlbad":a.dl.push({name:"index (1).html",size:new Blob([SAMPLE]).size,content:SAMPLE});explorerModal();break;
+  case "a-publish":if(!a.commits.length){toast("먼저 커밋 필요");return}a.pub={name:a.name,desc:a.desc,priv:true,err:""};publishModal();renderCoach();break;
+  case "a-pubclose":a.pub=null;closeModal();render();break;
+  case "a-pub-go":{const p=a.pub,nm=normName(p.name);if(!nm){p.err="Name is required";publishModal();return}
+   if(S.repo){p.err=S.repo.name===nm?`Name already exists on this account`:"연습에서는 저장소 1개만 사용. 위쪽 초기화 후 진행";publishModal();return}
+   const t=Date.now();S.repo={name:nm,desc:p.desc.trim(),vis:p.priv?"private":"public",files:[],commits:[],runs:[],pages:{branch:null,folder:"/"}};
+   a.commits.slice().reverse().forEach(c=>{c.pushed=true;S.repo.commits.unshift({msg:c.msg,time:c.time});c.files.forEach(n=>{const f=a.files[n];S.repo.files=S.repo.files.filter(x=>x.name!==n);S.repo.files.push({...f,commit:c.msg,time:c.time})})});
+   a.name=nm;a.published=true;a.ahead=0;a.pub=null;S.draft={branch:null,folder:"/",source:"branch"};closeModal();render();toast(p.priv?"Private 저장소로 게시됨":"GitHub.com에 게시 완료");break}
+  case "a-push":{if(!a.published||!a.ahead)return;const pend=a.commits.filter(c=>!c.pushed).reverse();let last="";
+   pend.forEach(c=>{c.pushed=true;last=c.msg;S.repo.commits.unshift({msg:c.msg,time:c.time});c.files.forEach(n=>{const f=a.files[n];S.repo.files=S.repo.files.filter(x=>x.name!==n);S.repo.files.push({...f,commit:c.msg,time:c.time})})});
+   a.ahead=0;let msg="Push 완료";if(pagesOn()&&S.repo.vis==="public"){newRun(last);msg="Push 완료 · Pages 재배포 시작"}render();toast(msg);break}
+  case "a-fetch":toast("최신 상태");break;
+  case "a-viewgh":S.menu=null;if(!S.repo){toast("먼저 Publish repository");return}S.loggedIn=true;S.view="sim";S.hist=[];S.screen="repo";S.flash=null;render();window.scrollTo(0,0);break;
+ }
+}
+
+/* view mode: auto / pc / mob */
+let VMODE="auto";
+function setMode(m){VMODE=m;document.body.classList.toggle("desk",m==="pc");document.body.classList.toggle("mob",m==="mob");$("#pb-pc").classList.toggle("on",m==="pc");$("#pb-mob").classList.toggle("on",m==="mob");
+ try{localStorage.setItem("ghsim:mode",m)}catch(e){}fitDesk();if(m!=="auto"&&S.view!=="sim"&&S.view!=="app"){S.view="sim";render()}else render()}
+/* desktop mode */
+function fitDesk(){const z=Math.min(1,document.documentElement.clientWidth/1280);$("#stage").style.setProperty("--z",z);if(S.view==="sim"||S.view==="app")requestAnimationFrame(()=>placeHot(S.view==="app"?appHint():hint()))}
+addEventListener("resize",fitDesk);
+try{const m=localStorage.getItem("ghsim:mode");if(m==="pc"||m==="mob")setTimeout(()=>setMode(m),0)}catch(e){}
+/* ticker */
+let sig="";
+function signature(){const r=S.repo;return r?r.runs.map(x=>runStatus(x)).join(",")+"|"+Math.floor(Date.now()/30000):""}
+setInterval(()=>{if(!S.repo||S.view!=="sim")return;const s=signature();if(s!==sig){const was=sig;sig=s;
+ if(["actions","run","pages","repo"].includes(S.screen)&&!document.activeElement.matches("input,textarea"))render();else renderCoach();
+ if(was&&/success$/.test(s.split("|")[0])&&!/success$/.test(was.split("|")[0]))toast("배포 완료")}},400);
+
+render();
+})();
+</script>
+
+</body></html>
